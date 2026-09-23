@@ -1,0 +1,15 @@
+spring.application.name=zipbob_backend
+
+# PostgreSQL DB 연결 설정 (5432/ 뒤에 실제 DB이름 입력)
+spring.datasource.url=jdbc:postgresql://localhost:5432/${DB_NAME}
+spring.datasource.username=${DB_USER_NAME}
+spring.datasource.password=${DB_PASSWORD}
+
+# JPA 및 스키마 설정
+spring.jpa.hibernate.ddl-auto=validate 
+#ddl-auto=validate를 쓰는 이유 = DB의 test 테이블을 이미 만들어 놓으셨기 때문에 Spring Boot가 테이블을 새로 만들거나 수정하지 못하게 하는 겁니다.
+spring.jpa.properties.hibernate.default_schema=${DB_SCHEMA}
+
+# SQL 로그 출력
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
