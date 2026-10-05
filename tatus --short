@@ -1,0 +1,316 @@
+[1mdiff --git a/build.gradle b/build.gradle[m
+[1mindex e8c5586..3d97376 100644[m
+[1m--- a/build.gradle[m
+[1m+++ b/build.gradle[m
+[36m@@ -25,6 +25,8 @@[m [mdependencies {[m
+     testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'[m
+     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'[m
+     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'[m
+[32m+[m[32m    compileOnly 'org.projectlombok:lombok'[m
+[32m+[m[32m    annotationProcessor 'org.projectlombok:lombok'[m
+ }[m
+ [m
+ tasks.named('test') {[m
+[1mdiff --git a/src/main/java/com/zipbob/zipbob_backend/config/WebConfig.java b/src/main/java/com/zipbob/zipbob_backend/config/WebConfig.java[m
+[1mindex d13c3f8..bfaf85c 100644[m
+[1m--- a/src/main/java/com/zipbob/zipbob_backend/config/WebConfig.java[m
+[1m+++ b/src/main/java/com/zipbob/zipbob_backend/config/WebConfig.java[m
+[36m@@ -1,4 +1,17 @@[m
+ package com.zipbob.zipbob_backend.config;[m
+ [m
+[31m-public class WebConfig {[m
+[31m-}[m
+[32m+[m[32mimport org.springframework.context.annotation.Configuration;[m
+[32m+[m[32mimport org.springframework.web.servlet.config.annotation.CorsRegistry;[m
+[32m+[m[32mimport org.springframework.web.servlet.config.annotation.WebMvcConfigurer;[m
+[32m+[m
+[32m+[m[32m@Configuration[m
+[32m+[m[32mpublic class WebConfig implements WebMvcConfigurer {[m
+[32m+[m
+[32m+[m[32m    @Override[m
+[32m+[m[32m    public void addCorsMappings(CorsRegistry registry) {[m
+[32m+[m[32m        registry.addMapping("/**")[m
+[32m+[m[32m                .allowedOrigins("http://localhost:3000")[m
+[32m+[m[32m                .allowedMethods("GET")[m
+[32m+[m[32m                .allowedHeaders("*");[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/zipbob/zipbob_backend/controller/MenuController.java b/src/main/java/com/zipbob/zipbob_backend/controller/MenuController.java[m
+[1mindex 5111fce..fe1f1f2 100644[m
+[1m--- a/src/main/java/com/zipbob/zipbob_backend/controller/MenuController.java[m
+[1m+++ b/src/main/java/com/zipbob/zipbob_backend/controller/MenuController.java[m
+[36m@@ -1,4 +1,24 @@[m
+ package com.zipbob.zipbob_backend.controller;[m
+ [m
+[32m+[m[32mimport com.zipbob.zipbob_backend.dto.MenuResponseDto;[m
+[32m+[m[32mimport com.zipbob.zipbob_backend.service.MenuService;[m
+[32m+[m[32mimport lombok.RequiredArgsConstructor;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.GetMapping;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.PathVariable;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.RequestMapping;[m
+[32m+[m[32mimport org.springframework.web.bind.annotation.RestController;[m
+[32m+[m
+[32m+[m[32m@RestController[m
+[32m+[m[32m@RequestMapping("/api/menus")[m
+[32m+[m[32m@RequiredArgsConstructor[m
+ public class MenuController {[m
+[31m-}[m
+[32m+[m
+[32m+[m[32m    private final MenuService menuService;[m
+[32m+[m
+[32m+[m[32m    @GetMapping("/{menuId}")[m
+[32m+[m[32m    public MenuResponseDto getMenu([m
+[32m+[m[32m            @PathVariable("menuId") Integer menuId[m
+[32m+[m[32m    ) {[m
+[32m+[m[32m        return menuService.getMenu(menuId);[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/zipbob/zipbob_backend/dto/MenuResponseDto.java b/src/main/java/com/zipbob/zipbob_backend/dto/MenuResponseDto.java[m
+[1mindex 6130df1..51c8d52 100644[m
+[1m--- a/src/main/java/com/zipbob/zipbob_backend/dto/MenuResponseDto.java[m
+[1m+++ b/src/main/java/com/zipbob/zipbob_backend/dto/MenuResponseDto.java[m
+[36m@@ -1,4 +1,40 @@[m
+ package com.zipbob.zipbob_backend.dto;[m
+ [m
+[32m+[m[32mimport com.zipbob.zipbob_backend.entity.Menu;[m
+[32m+[m[32mimport com.zipbob.zipbob_backend.entity.MenuFile;[m
+[32m+[m[32mimport lombok.Getter;[m
+[32m+[m
+[32m+[m[32m@Getter[m
+ public class MenuResponseDto {[m
+[31m-}[m
+[32m+[m
+[32m+[m[32m    private final Integer menuId;[m
+[32m+[m[32m    private final String menuName;[m
+[32m+[m[32m    private final String category;[m
+[32m+[m[32m    private final String description;[m
+[32m+[m[32m    private final Integer servings;[m
+[32m+[m[32m    private final Integer cookTime;[m
+[32m+[m[32m    private final Integer cookMinute;[m
+[32m+[m[32m    private final String ingredients;[m
+[32m+[m[32m    private final String steps;[m
+[32m+[m[32m    private final String difficultyLvl;[m
+[32m+[m[32m    private final String imageUrl;[m
+[32m+[m
+[32m+[m[32m    public MenuResponseDto(Menu menu) {[m
+[32m+[m[32m        this.menuId = menu.getMenuId();[m
+[32m+[m[32m        this.menuName = menu.getMenuName();[m
+[32m+[m[32m        this.category = menu.getCategory();[m
+[32m+[m[32m        this.description = menu.getDescription();[m
+[32m+[m[32m        this.servings = menu.getServings();[m
+[32m+[m[32m        this.cookTime = menu.getCookTime();[m
+[32m+[m[32m        this.cookMinute = menu.getCookMinute();[m
+[32m+[m[32m        this.ingredients = menu.getIngredients();[m
+[32m+[m[32m        this.steps = menu.getSteps();[m
+[32m+[m[32m        this.difficultyLvl = menu.getDifficultyLvl();[m
+[32m+[m
+[32m+[m[32m        this.imageUrl = menu.getFiles().stream()[m
+[32m+[m[32m                .filter(file -> "Y".equals(file.getUseYn()))[m
+[32m+[m[32m                .map(MenuFile::getFilePath)[m
+[32m+[m[32m                .findFirst()[m
+[32m+[m[32m                .orElse(null);[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/zipbob/zipbob_backend/entity/Menu.java b/src/main/java/com/zipbob/zipbob_backend/entity/Menu.java[m
+[1mindex cf457e8..7c9dbb9 100644[m
+[1m--- a/src/main/java/com/zipbob/zipbob_backend/entity/Menu.java[m
+[1m+++ b/src/main/java/com/zipbob/zipbob_backend/entity/Menu.java[m
+[36m@@ -1,4 +1,69 @@[m
+ package com.zipbob.zipbob_backend.entity;[m
+ [m
+[32m+[m[32mimport jakarta.persistence.*;[m
+[32m+[m[32mimport lombok.AccessLevel;[m
+[32m+[m[32mimport lombok.Getter;[m
+[32m+[m[32mimport lombok.NoArgsConstructor;[m
+[32m+[m
+[32m+[m[32mimport java.time.LocalDateTime;[m
+[32m+[m[32mimport java.util.ArrayList;[m
+[32m+[m[32mimport java.util.List;[m
+[32m+[m
+[32m+[m[32m@Entity[m
+[32m+[m[32m@Table(name = "menu_mng", schema = "zipbob_app")[m
+[32m+[m[32m@Getter[m
+[32m+[m[32m@NoArgsConstructor(access = AccessLevel.PROTECTED)[m
+ public class Menu {[m
+[31m-}[m
+[32m+[m
+[32m+[m[32m    @Id[m
+[32m+[m[32m    @GeneratedValue(strategy = GenerationType.IDENTITY)[m
+[32m+[m[32m    @Column(name = "menu_id")[m
+[32m+[m[32m    private Integer menuId;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "menu_name", nullable = false, length = 50)[m
+[32m+[m[32m    private String menuName;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "category", length = 50)[m
+[32m+[m[32m    private String category;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "description", length = 100)[m
+[32m+[m[32m    private String description;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "servings")[m
+[32m+[m[32m    private Integer servings;[m
+[32m+[m
+[32m+[m[32m    // 조리 시간: 시간 단위[m
+[32m+[m[32m    @Column(name = "cook_time")[m
+[32m+[m[32m    private Integer cookTime;[m
+[32m+[m
+[32m+[m[32m    // 조리 시간: 분 단위[m
+[32m+[m[32m    @Column(name = "cook_minute")[m
+[32m+[m[32m    private Integer cookMinute;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "ingredients", columnDefinition = "text")[m
+[32m+[m[32m    private String ingredients;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "steps", columnDefinition = "text")[m
+[32m+[m[32m    private String steps;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "created_id", length = 50)[m
+[32m+[m[32m    private String createdId;[m
+[32m+[m
+[32m+[m[32m    // DB의 실제 컬럼명이 crated_dt이므로 그대로 매핑[m
+[32m+[m[32m    // INSERT 시 DB의 CURRENT_TIMESTAMP 기본값 사용[m
+[32m+[m[32m    @Column(name = "crated_dt", insertable = false, updatable = false)[m
+[32m+[m[32m    private LocalDateTime createdDt;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "updated_id", length = 50)[m
+[32m+[m[32m    private String updatedId;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "updated_dt")[m
+[32m+[m[32m    private LocalDateTime updatedDt;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "difficulty_lvl", length = 50)[m
+[32m+[m[32m    private String difficultyLvl;[m
+[32m+[m
+[32m+[m[32m    @OneToMany(mappedBy = "menu", fetch = FetchType.LAZY)[m
+[32m+[m[32m    @OrderBy("fileId ASC")[m
+[32m+[m[32m    private List<MenuFile> files = new ArrayList<>();[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/zipbob/zipbob_backend/entity/MenuFile.java b/src/main/java/com/zipbob/zipbob_backend/entity/MenuFile.java[m
+[1mindex b70ab2d..0e9e29e 100644[m
+[1m--- a/src/main/java/com/zipbob/zipbob_backend/entity/MenuFile.java[m
+[1m+++ b/src/main/java/com/zipbob/zipbob_backend/entity/MenuFile.java[m
+[36m@@ -1,4 +1,54 @@[m
+ package com.zipbob.zipbob_backend.entity;[m
+ [m
+[32m+[m[32mimport jakarta.persistence.*;[m
+[32m+[m[32mimport lombok.AccessLevel;[m
+[32m+[m[32mimport lombok.Getter;[m
+[32m+[m[32mimport lombok.NoArgsConstructor;[m
+[32m+[m[32mimport org.hibernate.annotations.JdbcTypeCode;[m
+[32m+[m[32mimport org.hibernate.type.SqlTypes;[m
+[32m+[m
+[32m+[m[32mimport java.time.LocalDateTime;[m
+[32m+[m
+[32m+[m[32m@Entity[m
+[32m+[m[32m@Table(name = "file_mng", schema = "zipbob_app")[m
+[32m+[m[32m@Getter[m
+[32m+[m[32m@NoArgsConstructor(access = AccessLevel.PROTECTED)[m
+ public class MenuFile {[m
+[31m-}[m
+[32m+[m
+[32m+[m[32m    @Id[m
+[32m+[m[32m    @GeneratedValue(strategy = GenerationType.IDENTITY)[m
+[32m+[m[32m    @Column(name = "file_id")[m
+[32m+[m[32m    private Integer fileId;[m
+[32m+[m
+[32m+[m[32m    @ManyToOne(fetch = FetchType.LAZY, optional = false)[m
+[32m+[m[32m    @JoinColumn(name = "menu_id", nullable = false)[m
+[32m+[m[32m    private Menu menu;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "file_path", nullable = false, length = 255)[m
+[32m+[m[32m    private String filePath;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "file_size")[m
+[32m+[m[32m    private Integer fileSize;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "file_save_name", nullable = false, length = 255)[m
+[32m+[m[32m    private String fileSaveName;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "file_name", nullable = false, length = 100)[m
+[32m+[m[32m    private String fileName;[m
+[32m+[m
+[32m+[m[32m    @JdbcTypeCode(SqlTypes.CHAR)[m
+[32m+[m[32m    @Column(name = "use_yn", length = 1, columnDefinition = "char(1)")[m
+[32m+[m[32m    private String useYn = "Y";[m
+[32m+[m
+[32m+[m[32m    @Column(name = "created_id", length = 50)[m
+[32m+[m[32m    private String createdId;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "crated_dt", insertable = false, updatable = false)[m
+[32m+[m[32m    private LocalDateTime createdDt;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "updated_id", length = 50)[m
+[32m+[m[32m    private String updatedId;[m
+[32m+[m
+[32m+[m[32m    @Column(name = "updated_dt")[m
+[32m+[m[32m    private LocalDateTime updatedDt;[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/zipbob/zipbob_backend/repository/MenuRepository.java b/src/main/java/com/zipbob/zipbob_backend/repository/MenuRepository.java[m
+[1mindex 6c60bc1..29e9cae 100644[m
+[1m--- a/src/main/java/com/zipbob/zipbob_backend/repository/MenuRepository.java[m
+[1m+++ b/src/main/java/com/zipbob/zipbob_backend/repository/MenuRepository.java[m
+[36m@@ -1,4 +1,20 @@[m
+ package com.zipbob.zipbob_backend.repository;[m
+ [m
+[31m-public class MenuRepository {[m
+[31m-}[m
+[32m+[m[32mimport com.zipbob.zipbob_backend.entity.Menu;[m
+[32m+[m[32mimport org.springframework.data.jpa.repository.JpaRepository;[m
+[32m+[m[32mimport org.springframework.data.jpa.repository.Query;[m
+[32m+[m[32mimport org.springframework.data.repository.query.Param;[m
+[32m+[m
+[32m+[m[32mimport java.util.Optional;[m
+[32m+[m
+[32m+[m[32m// Menu 엔티티와 Integer 타입의 PK 사용[m
+[32m+[m[32mpublic interface MenuRepository extends JpaRepository<Menu, Integer> {[m
+[32m+[m[32m    // 메뉴 조회 시 연결된 파일도 함께 조회. 파일이 없어도 메뉴 반환[m
+[32m+[m[32m    @Query("""[m
+[32m+[m[32m        SELECT DISTINCT m[m
+[32m+[m[32m        FROM Menu m[m
+[32m+[m[32m        LEFT JOIN FETCH m.files[m
+[32m+[m[32m        WHERE m.menuId = :menuId[m
+[32m+[m[32m        """)[m
+[32m+[m[32m    Optional<Menu> findByIdWithFiles(@Param("menuId") Integer menuId);[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/src/main/java/com/zipbob/zipbob_backend/service/MenuService.java b/src/main/java/com/zipbob/zipbob_backend/service/MenuService.java[m
+[1mindex afd2b09..e256110 100644[m
+[1m--- a/src/main/java/com/zipbob/zipbob_backend/service/MenuService.java[m
+[1m+++ b/src/main/java/com/zipbob/zipbob_backend/service/MenuService.java[m
+[36m@@ -1,4 +1,28 @@[m
+ package com.zipbob.zipbob_backend.service;[m
+ [m
+[32m+[m[32mimport com.zipbob.zipbob_backend.dto.MenuResponseDto;[m
+[32m+[m[32mimport com.zipbob.zipbob_backend.entity.Menu;[m
+[32m+[m[32mimport com.zipbob.zipbob_backend.repository.MenuRepository;[m
+[32m+[m[32mimport lombok.RequiredArgsConstructor;[m
+[32m+[m[32mimport org.springframework.http.HttpStatus;[m
+[32m+[m[32mimport org.springframework.stereotype.Service;[m
+[32m+[m[32mimport org.springframework.transaction.annotation.Transactional;[m
+[32m+[m[32mimport org.springframework.web.server.ResponseStatusException;[m
+[32m+[m
+[32m+[m[32m@Service[m
+[32m+[m[32m@RequiredArgsConstructor[m
+[32m+[m[32m@Transactional(readOnly = true)[m
+ public class MenuService {[m
+[31m-}[m
+[32m+[m
+[32m+[m[32m    private final MenuRepository menuRepository;[m
+[32m+[m
+[32m+[m[32m    public MenuResponseDto getMenu(Integer menuId) {[m
+[32m+[m[32m        Menu menu = menuRepository.findByIdWithFiles(menuId)[m
+[32m+[m[32m                .orElseThrow(() -> new ResponseStatusException([m
+[32m+[m[32m                        HttpStatus.NOT_FOUND,[m
+[32m+[m[32m                        "메뉴를 찾을 수 없습니다."[m
+[32m+[m[32m                ));[m
+[32m+[m
+[32m+[m[32m        return new MenuResponseDto(menu);[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
