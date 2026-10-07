@@ -66,4 +66,8 @@ public class Menu {
     @OneToMany(mappedBy = "menu", fetch = FetchType.LAZY)
     @OrderBy("fileId ASC")
     private List<MenuFile> files = new ArrayList<>();
+
+    @OneToMany(mappedBy = "menu", fetch = FetchType.LAZY)
+    @OrderBy("codeId ASC")
+    private List<Tag> tags = new ArrayList<>();
 }
