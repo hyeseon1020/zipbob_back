@@ -3,7 +3,7 @@ package com.zipbob.zipbob_backend.dto;
 import com.zipbob.zipbob_backend.entity.Menu;
 import com.zipbob.zipbob_backend.entity.MenuFile;
 import lombok.Getter;
-
+// 메뉴 레시피 조회 (메뉴 정보·이미지·인분·시간·난이도·재료·조리 순서)
 @Getter
 public class MenuResponseDto {
 
