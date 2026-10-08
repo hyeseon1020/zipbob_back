@@ -8,6 +8,9 @@ public interface MenuListProjection {
     String getCategoryName();
     String getDescription();
     String getImageUrl();
+    String getTagSeq();
+    String getCodeId();
+    String getTagName();
 }
 /*
 | SQL 결과 별칭 | 읽는 메서드 | 예시 |

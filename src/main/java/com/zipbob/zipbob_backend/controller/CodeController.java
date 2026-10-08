@@ -16,11 +16,13 @@ public class CodeController {
 
     private final CodeService codeService;
 
+    //카테고리 리스트
     @GetMapping("/category")
     public List<CodeResponseDto> getCategoryCodes() {
         return codeService.getCategoryCodes();
     }
 
+    //음식특징 리스트
     @GetMapping("/tag")
     public List<CodeResponseDto> getTagCodes(){
         return codeService.getTagCodes();

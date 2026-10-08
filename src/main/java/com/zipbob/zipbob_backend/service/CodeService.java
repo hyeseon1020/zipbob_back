@@ -14,6 +14,7 @@ import java.util.List;
 public class CodeService {
     private final CodeRepository codeRepository;
 
+    /*codeParent, useYn으로 배열 가져오기*/
     public List<CodeResponseDto> getCategoryCodes(){
         return codeRepository
                 .findByCodeParentAndUseYn("category_code","Y")
