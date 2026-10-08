@@ -1,6 +1,6 @@
 package com.zipbob.zipbob_backend.repository;
 
-import com.zipbob.zipbob_backend.dto.MenuListProjection;
+import com.zipbob.zipbob_backend.dto.MenuTagListProjection;
 import com.zipbob.zipbob_backend.entity.Menu;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -23,5 +23,5 @@ public interface MenuFilterRepository extends JpaRepository<Menu, Integer> {
         LEFT OUTER JOIN zipbob_app.tag_mng t
         ON m.menu_id = t.menu_id and t.use_yn = 'Y'
     """, nativeQuery = true)
-    List<MenuListProjection> findAllWithCategoryName();
+    List<MenuTagListProjection> findAllWithCategoryName();
 }

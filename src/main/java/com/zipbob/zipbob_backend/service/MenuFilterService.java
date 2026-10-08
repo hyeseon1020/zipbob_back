@@ -1,7 +1,7 @@
 package com.zipbob.zipbob_backend.service;
 
 import com.zipbob.zipbob_backend.dto.MenuFilterResponseDto;
-import com.zipbob.zipbob_backend.dto.MenuListProjection;
+import com.zipbob.zipbob_backend.dto.MenuTagListProjection;
 import com.zipbob.zipbob_backend.repository.MenuFilterRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,12 +17,12 @@ public class MenuFilterService {
     private final MenuFilterRepository menuFilterRepository;
 
     public List<MenuFilterResponseDto> getMenuListWithTags() {
-        List<MenuListProjection> projections = menuFilterRepository.findAllWithCategoryName();
+        List<MenuTagListProjection> projections = menuFilterRepository.findAllWithCategoryName();
 
         // 순서를 보장하면서 menuId 기준으로 그룹화
         Map<Integer, MenuFilterResponseDto> menuMap = new LinkedHashMap<>();
 
-        for (MenuListProjection p : projections) {
+        for (MenuTagListProjection p : projections) {
             // Map에 해당 menuId가 없으면 생성하여 추가
             MenuFilterResponseDto dto = menuMap.computeIfAbsent(
                     p.getMenuId(),
