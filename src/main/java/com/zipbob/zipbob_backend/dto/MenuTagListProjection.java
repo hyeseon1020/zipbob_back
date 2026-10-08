@@ -1,13 +1,11 @@
 package com.zipbob.zipbob_backend.dto;
 // SQL 조회 결과를 getter로 읽을 수 있게 정의
-public interface MenuListProjection {
-
+public interface MenuTagListProjection {
     Integer getMenuId();
     String getMenuName();
     String getCategory();
     String getCategoryName();
     String getDescription();
-    String getImageUrl();
     String getTagSeq();
     String getCodeId();
     String getTagName();
@@ -19,5 +17,7 @@ public interface MenuListProjection {
 | `category` | `getCategory()` | `rice_bowl` |
 | `categoryName` | `getCategoryName()` | `덮밥·비빔밥` |
 | `description` | `getDescription()` | 메뉴 설명 |
-| `imageUrl` | `getImageUrl()` | 이미지 경로 |
+| `tagSeq` | `getTagSeq()` | `1` |
+| `tagSeq` | `getCodeId()` | `qick_10min` |
+| `tagSeq` | `getTagName()` | `10분 완성` |
 */
