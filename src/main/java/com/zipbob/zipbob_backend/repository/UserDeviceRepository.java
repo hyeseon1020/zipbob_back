@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
-// 관리할 엔티티: UserDevice, PK 타입: Integer
+// 관리할 엔티티: UserDevice, 타입: Integer
 public interface UserDeviceRepository
         extends JpaRepository<UserDevice, Integer> {
 
