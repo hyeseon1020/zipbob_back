@@ -1,8 +1,12 @@
 package com.zipbob.zipbob_backend.service;
 
+import com.zipbob.zipbob_backend.dto.UserLoginRequestDto;
+import com.zipbob.zipbob_backend.dto.UserLoginResponseDto;
 import com.zipbob.zipbob_backend.dto.UserSignupRequestDto;
 import com.zipbob.zipbob_backend.dto.UserSignupResponseDto;
+import com.zipbob.zipbob_backend.dto.UserMeResponseDto;
 import com.zipbob.zipbob_backend.entity.User;
+import com.zipbob.zipbob_backend.security.JwtTokenProvider;
 import com.zipbob.zipbob_backend.repository.UserDeviceRepository;
 import com.zipbob.zipbob_backend.repository.UserRepository;
 
@@ -26,6 +30,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserDeviceRepository userDeviceRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final RefreshTokenService refreshTokenService;
 
     // 영문 대소문자·숫자·_, 4~50자
     private static final Pattern USER_ID_PATTERN =
@@ -237,5 +243,79 @@ public class UserService {
                 HttpStatus.CONFLICT,
                 message
         );
+    }
+
+    // 로그인 검증 + 토큰 발급
+    @Transactional
+    public UserLoginResponseDto login(UserLoginRequestDto request) {
+
+        if (request == null) {
+            throw badRequest("로그인 정보를 입력해 주세요.");
+        }
+
+        // 1. 필수 입력 확인
+        String userId = requiredText(
+                request.getUserId(),
+                "아이디를 입력해 주세요."
+        );
+
+        // 비밀번호는 공백 제거 없이 그대로 사용
+        String userPw = request.getUserPw();
+
+        if (userPw == null || userPw.isEmpty()) {
+            throw badRequest("비밀번호를 입력해 주세요.");
+        }
+
+        if (userPw.getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw badRequest(
+                    "비밀번호는 UTF-8 기준 72바이트 이하로 입력해 주세요."
+            );
+        }
+
+        // 2. 회원 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserService::loginFailed);
+
+        // 3. 비밀번호 확인
+        if (!passwordEncoder.matches(userPw, user.getUserPw())) {
+            throw loginFailed();
+        }
+
+        // 4. 액세스 토큰 생성
+        String accessToken = jwtTokenProvider.createAccessToken(
+                user.getUserId()
+        );
+
+        // 5. 리프레시 토큰 생성 및 해시 저장
+        String refreshToken = refreshTokenService.issue(user);
+
+        // 6. 토큰 두 개와 회원 정보 반환
+        return new UserLoginResponseDto(
+                user,
+                accessToken,
+                refreshToken,
+                jwtTokenProvider.getAccessTokenExpirationSeconds()
+        );
+    }
+
+    // 아이디 없음·비밀번호 불일치는 같은 메시지로 응답
+    private static ResponseStatusException loginFailed() {
+        return new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "아이디 또는 비밀번호가 일치하지 않습니다."
+        );
+    }
+
+    // 인증된 회원 정보 조회
+    @Transactional(readOnly = true)
+    public UserMeResponseDto getMe(String userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "회원 정보를 찾을 수 없습니다. 다시 로그인해 주세요."
+                ));
+
+        return new UserMeResponseDto(user);
     }
 }
