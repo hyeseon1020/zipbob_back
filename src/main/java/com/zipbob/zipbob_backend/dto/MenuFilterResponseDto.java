@@ -14,6 +14,7 @@ public class MenuFilterResponseDto {
     private final String category;
     private final String categoryName;
     private final String description;
+    private String imageUrl;
     private final List<TagDto> tags = new ArrayList<>(); // 태그들을 리스트로 관리
 
     // 1. 기존 전체 조회용 (MenuTagListProjection 받는 생성자)
@@ -26,13 +27,14 @@ public class MenuFilterResponseDto {
         //이중 배열
     }
 
-    // 2. [추가] 필터링 조회용 (MenuListProjection 받는 생성자)
+    // 2. [추가] 필터링 조회용 (MenuListProjection 받는 생성자)com.zipbob.zipbob_backend.dto.MenuFilterResponseDto
     public MenuFilterResponseDto(MenuListProjection p) {
         this.menuId = p.getMenuId();
         this.menuName = p.getMenuName();
         this.category = p.getCategory();
         this.categoryName = p.getCategoryName();
         this.description = p.getDescription();
+        this.imageUrl = p.getImageUrl();
         // tags는 필터링 조회 시 비어있거나 필요 없으므로 초기화 상태 유지
     }
 

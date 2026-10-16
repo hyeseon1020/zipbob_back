@@ -38,9 +38,11 @@ public interface MenuFilterRepository extends JpaRepository<Menu, Integer> {
             m.menu_name AS menuName,
             m.category AS category,
             zipbob_app.codename_f(m.category) AS categoryName,
-            m.description AS description
+            m.description AS description,
+            f.file_path AS imageUrl
         FROM zipbob_app.menu_mng m
         LEFT JOIN zipbob_app.tag_mng t ON m.menu_id = t.menu_id AND t.use_yn = 'Y'
+        LEFT JOIN file_mng f ON m.menu_id = f.menu_id AND f.use_yn = 'Y'
         WHERE (:category IS NULL OR :category = '' OR m.category = :category)
           AND (:hasTags = false OR t.code_id IN (:tags))
     """, nativeQuery = true)
