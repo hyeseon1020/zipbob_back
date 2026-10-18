@@ -1,5 +1,7 @@
 package com.zipbob.zipbob_backend.controller;
 
+import com.zipbob.zipbob_backend.dto.FindIdRequestDto;
+import com.zipbob.zipbob_backend.dto.ResetPasswordRequestDto;
 import com.zipbob.zipbob_backend.dto.UserLoginRequestDto;
 import com.zipbob.zipbob_backend.dto.UserLoginResponseDto;
 import com.zipbob.zipbob_backend.dto.UserSignupRequestDto;
@@ -7,7 +9,6 @@ import com.zipbob.zipbob_backend.dto.UserSignupResponseDto;
 import com.zipbob.zipbob_backend.dto.RefreshTokenRequestDto;
 import com.zipbob.zipbob_backend.dto.TokenRefreshResponseDto;
 import com.zipbob.zipbob_backend.dto.UserMeResponseDto;
-import org.springframework.security.core.Authentication;
 import com.zipbob.zipbob_backend.service.RefreshTokenService;
 import com.zipbob.zipbob_backend.service.UserService;
 
@@ -15,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -33,42 +35,26 @@ public class UserController {
     public ResponseEntity<UserSignupResponseDto> signup(
             @RequestBody UserSignupRequestDto request
     ) {
-        UserSignupResponseDto response = userService.signup(request);
+        UserSignupResponseDto response =
+                userService.signup(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
 
-    // 로그인 정보 검증
+    // 로그인
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponseDto> login(
-            @RequestBody UserLoginRequestDto  request
-    ){
-        UserLoginResponseDto response = userService.login(request);
+            @RequestBody UserLoginRequestDto request
+    ) {
+        UserLoginResponseDto response =
+                userService.login(request);
 
         return ResponseEntity.ok()
                 .header("Cache-Control", "no-store")
                 .header("Pragma", "no-cache")
                 .body(response);
-    }
-
-    // 회원가입·로그인 등 사용자 API의 요청 오류 처리
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<Map<String, Object>> handleUserError(
-            ResponseStatusException exception
-    ) {
-        String message = exception.getReason() == null
-                ? "요청을 처리할 수 없습니다."
-                : exception.getReason();
-
-        return ResponseEntity
-                .status(exception.getStatusCode())
-                .header("Cache-Control", "no-store")
-                .body(Map.<String, Object>of(
-                        "status", exception.getStatusCode().value(),
-                        "message", message
-                ));
     }
 
     // 토큰 재발급
@@ -102,11 +88,60 @@ public class UserController {
     public ResponseEntity<UserMeResponseDto> me(
             Authentication authentication
     ) {
-        // 요청 파라미터가 아닌, 검증된 토큰의 회원 아이디 사용
         String userId = authentication.getName();
 
         return ResponseEntity.ok()
                 .header("Cache-Control", "no-store")
                 .body(userService.getMe(userId));
+    }
+
+    // 아이디 찾기
+    @PostMapping("/find-id")
+    public ResponseEntity<Map<String, String>> findId(
+            @RequestBody FindIdRequestDto request
+    ) {
+        String userId = userService.findId(request);
+
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-store")
+                .body(Map.of(
+                        "userId",
+                        userId
+                ));
+    }
+
+    // 비밀번호 재설정
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @RequestBody ResetPasswordRequestDto request
+    ) {
+        userService.resetPassword(request);
+
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-store")
+                .body(Map.of(
+                        "message",
+                        "비밀번호가 변경되었습니다. 새 비밀번호로 로그인해 주세요."
+                ));
+    }
+
+    // 사용자 API에서 발생한 요청 오류 처리
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleUserError(
+            ResponseStatusException exception
+    ) {
+        String message = exception.getReason() == null
+                ? "요청을 처리할 수 없습니다."
+                : exception.getReason();
+
+        return ResponseEntity
+                .status(exception.getStatusCode())
+                .header("Cache-Control", "no-store")
+                .body(Map.<String, Object>of(
+                        "status",
+                        exception.getStatusCode().value(),
+                        "message",
+                        message
+                ));
     }
 }

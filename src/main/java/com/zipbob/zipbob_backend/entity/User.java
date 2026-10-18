@@ -56,4 +56,11 @@ public class User {
     // 수정일
     @Column(name = "updated_dt")
     private LocalDateTime updatedDt;
+
+    // 이미 해시한 비밀번호를 전달받아 변경
+    public void changePassword(String encodedPassword) {
+        this.userPw = encodedPassword;
+        this.updatedId = this.userId;
+        this.updatedDt = LocalDateTime.now();
+    }
 }

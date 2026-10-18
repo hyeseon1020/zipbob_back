@@ -19,11 +19,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-// 새 API를 추가하면 이 접근 규칙도 함께 수정
-// 비회원·회원에 따라 호출할 수 있는 API를 구분
 public class SecurityConfig {
 
-    // 토큰 누락·만료·변조 시 JSON으로 401 반환
     @Bean
     public AuthenticationEntryPoint authenticationEntryPoint() {
         return (request, response, exception) -> {
@@ -58,13 +55,12 @@ public class SecurityConfig {
                 );
 
         http
-                // 기존 WebConfig의 MVC CORS 설정 사용
+                // 기존 WebConfig의 CORS 설정 사용
                 .cors(Customizer.withDefaults())
 
-                // 쿠키 인증 없이 Authorization 헤더로 인증하는 API
+                // Authorization 헤더로 인증하는 API
                 .csrf(csrf -> csrf.disable())
 
-                // 로그인 세션을 생성하거나 인증에 사용하지 않음
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
@@ -74,8 +70,6 @@ public class SecurityConfig {
                 .requestCache(cache -> cache.disable())
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
-
-                // 직접 만든 /api/users/logout API 사용
                 .logout(logout -> logout.disable())
 
                 .exceptionHandling(exception -> exception
@@ -98,31 +92,35 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                        // 오류 응답을 처리하는 내부 디스패치 허용
-                        .dispatcherTypeMatchers(DispatcherType.ERROR)
-                        .permitAll()
+                        .dispatcherTypeMatchers(
+                                DispatcherType.ERROR
+                        ).permitAll()
 
-                        .requestMatchers(HttpMethod.OPTIONS, "/**")
-                        .permitAll()
+                        .requestMatchers(
+                                HttpMethod.OPTIONS,
+                                "/**"
+                        ).permitAll()
 
-                        // 회원가입·로그인·재발급·로그아웃·이메일 인증
+                        // 로그인 없이 사용하는 회원·인증 API
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/users/signup",
                                 "/api/users/login",
                                 "/api/users/refresh",
                                 "/api/users/logout",
+                                "/api/users/find-id",
+                                "/api/users/reset-password",
                                 "/api/email-verifications/send",
                                 "/api/email-verifications/confirm"
                         ).permitAll()
 
-                        // 회원 전용
+                        // 회원 전용 API
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/users/me"
                         ).authenticated()
 
-                        // 비회원 조회 기능
+                        // 비회원 조회 API
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/menus",
@@ -155,7 +153,6 @@ public class SecurityConfig {
                                 "/api/favorites/*"
                         ).permitAll()
 
-                        // 명시하지 않은 경로는 차단
                         .anyRequest().denyAll()
                 )
 
