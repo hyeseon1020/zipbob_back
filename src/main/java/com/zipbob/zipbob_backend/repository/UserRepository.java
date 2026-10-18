@@ -7,8 +7,16 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 // 관리할 엔티티: User, PK 타입: String
 public interface UserRepository extends JpaRepository<User, String> {
+
+    // 이메일로 회원 조회
+    Optional<User> findByEmailAndEmailAdr(
+            String email,
+            String emailAdr
+    );
 
     // 닉네임 중복 검사
     boolean existsByUserName(String userName);

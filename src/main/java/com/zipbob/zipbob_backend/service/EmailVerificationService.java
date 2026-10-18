@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
-// 인증번호 발송·확인과 회원가입 시 인증 증명 검증
 public class EmailVerificationService {
 
     private final EmailVerificationRepository verificationRepository;
@@ -45,15 +44,20 @@ public class EmailVerificationService {
 
     private static final String SIGNUP = "SIGNUP";
 
+    // 인증번호 유효시간: 5분
     private static final long CODE_TTL_SECONDS = 300;
+
+    // 인증 완료 후 발급하는 증명의 유효시간: 10분
     private static final long TOKEN_TTL_SECONDS = 600;
+
+    // 같은 이메일·목적의 재발송 간격: 60초
     private static final long RESEND_INTERVAL_SECONDS = 60;
 
+    // 인증번호 입력 실패 허용 횟수
     private static final int MAX_ATTEMPTS = 5;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    // 기존 회원가입과 동일한 이메일 형식
     private static final Pattern EMAIL_LOCAL_PATTERN =
             Pattern.compile(
                     "[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
@@ -69,7 +73,7 @@ public class EmailVerificationService {
     private static final Pattern CODE_PATTERN =
             Pattern.compile("[0-9]{6}");
 
-    // 32바이트 난수를 Base64 URL 형식으로 인코딩하면 43자리
+    // 32바이트 난수를 Base64 URL 형식으로 인코딩한 토큰
     private static final Pattern TOKEN_PATTERN =
             Pattern.compile("[A-Za-z0-9_-]{43}");
 
@@ -99,24 +103,30 @@ public class EmailVerificationService {
                 "인증 목적을 입력해 주세요."
         );
 
-        // 아이디 찾기·비밀번호 재설정은 해당 기능 구현 후 허용
-        if (!SIGNUP.equals(purpose)) {
-            throw badRequest("현재 회원가입용 이메일 인증만 지원합니다.");
+        // 세 가지 인증 목적만 허용
+        if (!java.util.Set.of(
+                SIGNUP,
+                "FIND_ID",
+                "RESET_PASSWORD"
+        ).contains(purpose)) {
+            throw badRequest("지원하지 않는 인증 목적입니다.");
         }
 
         // 같은 이메일·목적의 요청을 순서대로 처리
-        // 최초 발송처럼 잠글 인증 행이 없는 경우에도 적용
         lockEmail(email, emailAdr, purpose);
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (userRepository.existsByEmailAndEmailAdr(email, emailAdr)) {
+        // 회원가입에서만 이미 가입된 이메일을 거절
+        if (SIGNUP.equals(purpose)
+                && userRepository.existsByEmailAndEmailAdr(email, emailAdr)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "이미 가입된 이메일입니다."
             );
         }
 
+        // 같은 이메일·목적의 최근 발송 시각 확인
         verificationRepository
                 .findFirstByEmailAndEmailAdrAndPurposeOrderByCreatedDtDescEmailVerificationIdDesc(
                         email,
@@ -136,8 +146,7 @@ public class EmailVerificationService {
                     }
                 });
 
-        // 재발송하면 기존 인증번호와 인증 증명을 모두 만료
-        // 발송에 실패하면 같은 트랜잭션에서 이 변경도 취소됨
+        // 같은 이메일·목적의 기존 인증번호와 인증 증명을 만료
         jdbcTemplate.update("""
                 UPDATE zipbob_app.email_verification_mng
                 SET expires_dt = ?,
@@ -160,7 +169,8 @@ public class EmailVerificationService {
                 RANDOM.nextInt(1_000_000)
         );
 
-        LocalDateTime expiresDt = now.plusSeconds(CODE_TTL_SECONDS);
+        LocalDateTime expiresDt =
+                now.plusSeconds(CODE_TTL_SECONDS);
 
         EmailVerification verification = new EmailVerification(
                 email,
@@ -171,7 +181,7 @@ public class EmailVerificationService {
                 now
         );
 
-        // DB 제약조건 오류를 메일 발송 전에 확인
+        // 메일 발송 전에 DB 제약조건 오류 확인
         verificationRepository.saveAndFlush(verification);
 
         try {
@@ -182,7 +192,6 @@ public class EmailVerificationService {
                     CODE_TTL_SECONDS
             );
         } catch (MailException exception) {
-            // 기본 트랜잭션 동작에 따라 인증 기록 저장도 취소
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
                     "인증 메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요.",
@@ -206,7 +215,7 @@ public class EmailVerificationService {
     }
 
     // 2. 인증번호 확인
-    // 번호 불일치로 예외를 던져도 실패 횟수는 DB에 반영해야 함
+    // 번호 불일치로 예외가 발생해도 실패 횟수는 저장
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public EmailVerificationConfirmResponseDto confirm(
             EmailVerificationConfirmRequestDto request
@@ -217,14 +226,15 @@ public class EmailVerificationService {
             throw badRequest("올바른 인증 요청 ID가 필요합니다.");
         }
 
-        String verificationCode = request.getVerificationCode();
+        String verificationCode =
+                request.getVerificationCode();
 
         if (verificationCode == null
                 || !CODE_PATTERN.matcher(verificationCode).matches()) {
             throw badRequest("인증번호는 숫자 6자리로 입력해 주세요.");
         }
 
-        // 이메일 잠금에 필요한 정보를 먼저 조회
+        // 이메일 잠금에 필요한 정보 조회
         EmailVerification reference = verificationRepository
                 .findById(request.getEmailVerificationId())
                 .orElseThrow(() ->
@@ -237,21 +247,23 @@ public class EmailVerificationService {
                 reference.getPurpose()
         );
 
+        // 인증 기록 행 잠금
         EmailVerification verification = verificationRepository
                 .findByIdForUpdate(request.getEmailVerificationId())
                 .orElseThrow(() ->
                         badRequest("인증 요청을 찾을 수 없습니다.")
                 );
 
-        /*
-         첫 조회 이후 잠금을 기다리는 동안 다른 요청이
-         기록을 수정했을 수 있으므로 DB의 최신 상태로 갱신.
-         */
+        // 잠금 대기 중 변경되었을 수 있으므로 최신 상태 반영
         refreshVerification(verification);
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (!SIGNUP.equals(verification.getPurpose())) {
+        if (!java.util.Set.of(
+                SIGNUP,
+                "FIND_ID",
+                "RESET_PASSWORD"
+        ).contains(verification.getPurpose())) {
             throw badRequest("지원하지 않는 인증 목적입니다.");
         }
 
@@ -260,15 +272,21 @@ public class EmailVerificationService {
         }
 
         if (verification.getVerifiedDt() != null) {
-            throw badRequest("이미 확인한 인증번호입니다. 필요한 경우 재발송해 주세요.");
+            throw badRequest(
+                    "이미 확인한 인증번호입니다. 필요한 경우 재발송해 주세요."
+            );
         }
 
         if (!verification.getExpiresDt().isAfter(now)) {
-            throw badRequest("인증번호가 만료되었습니다. 다시 발송해 주세요.");
+            throw badRequest(
+                    "인증번호가 만료되었습니다. 다시 발송해 주세요."
+            );
         }
 
         if (verification.getAttemptCount() >= MAX_ATTEMPTS) {
-            throw badRequest("인증 시도 횟수를 초과했습니다. 다시 발송해 주세요.");
+            throw badRequest(
+                    "인증 시도 횟수를 초과했습니다. 다시 발송해 주세요."
+            );
         }
 
         if (!passwordEncoder.matches(
@@ -310,17 +328,38 @@ public class EmailVerificationService {
         );
     }
 
-    /*
-     3. 회원가입용 인증 증명 검증 및 사용 처리
-     반드시 회원가입 트랜잭션 안에서 호출
-     회원 저장에 실패하면 인증 증명 사용 처리도 함께 취소
-     */
+    // 3. 기존 회원가입에서 사용하는 진입 메서드 유지
     @Transactional(propagation = Propagation.MANDATORY)
     public void verifyAndUseForSignup(
             String email,
             String emailAdr,
             String verificationToken
     ) {
+        verifyAndUse(
+                email,
+                emailAdr,
+                verificationToken,
+                SIGNUP
+        );
+    }
+
+    // 4. 목적별 인증 증명 검증 및 사용 처리
+    // 반드시 호출한 서비스의 트랜잭션 안에서 실행
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void verifyAndUse(
+            String email,
+            String emailAdr,
+            String verificationToken,
+            String purpose
+    ) {
+        if (!java.util.Set.of(
+                SIGNUP,
+                "FIND_ID",
+                "RESET_PASSWORD"
+        ).contains(purpose)) {
+            throw badRequest("지원하지 않는 인증 목적입니다.");
+        }
+
         String normalizedEmail = normalizeEmailPart(
                 email,
                 "이메일 아이디를 입력해 주세요."
@@ -331,17 +370,26 @@ public class EmailVerificationService {
                 "이메일 도메인을 입력해 주세요."
         );
 
-        validateEmail(normalizedEmail, normalizedEmailAdr);
+        validateEmail(
+                normalizedEmail,
+                normalizedEmailAdr
+        );
 
         if (verificationToken == null
                 || !TOKEN_PATTERN.matcher(verificationToken).matches()) {
             throw badRequest("유효한 이메일 인증 증명이 필요합니다.");
         }
 
-        lockEmail(normalizedEmail, normalizedEmailAdr, SIGNUP);
+        lockEmail(
+                normalizedEmail,
+                normalizedEmailAdr,
+                purpose
+        );
 
         EmailVerification verification = verificationRepository
-                .findByTokenHashForUpdate(hashToken(verificationToken))
+                .findByTokenHashForUpdate(
+                        hashToken(verificationToken)
+                )
                 .orElseThrow(() ->
                         badRequest("이메일 인증 증명이 유효하지 않습니다.")
                 );
@@ -350,39 +398,50 @@ public class EmailVerificationService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        if (!SIGNUP.equals(verification.getPurpose())) {
-            throw badRequest("회원가입용 이메일 인증이 필요합니다.");
+        // 가입용 인증을 비밀번호 재설정 등에 사용할 수 없도록 검사
+        if (!purpose.equals(verification.getPurpose())) {
+            throw badRequest(
+                    "요청한 작업에 맞는 이메일 인증이 필요합니다."
+            );
         }
 
+        // 인증한 이메일과 실제 작업 대상 이메일 일치 확인
         if (!normalizedEmail.equals(verification.getEmail())
                 || !normalizedEmailAdr.equals(verification.getEmailAdr())) {
-            throw badRequest("인증한 이메일과 가입할 이메일이 다릅니다.");
+            throw badRequest(
+                    "인증한 이메일과 요청한 이메일이 다릅니다."
+            );
         }
 
         if (verification.getVerifiedDt() == null) {
-            throw badRequest("이메일 인증을 먼저 완료해 주세요.");
+            throw badRequest(
+                    "이메일 인증을 먼저 완료해 주세요."
+            );
         }
 
         if (verification.getUsedDt() != null) {
-            throw badRequest("이미 사용한 이메일 인증 증명입니다.");
+            throw badRequest(
+                    "이미 사용한 이메일 인증 증명입니다."
+            );
         }
 
         if (verification.getTokenExpiresDt() == null
                 || !verification.getTokenExpiresDt().isAfter(now)) {
-            throw badRequest("이메일 인증 증명이 만료되었습니다. 다시 인증해 주세요.");
+            throw badRequest(
+                    "이메일 인증 증명이 만료되었습니다. 다시 인증해 주세요."
+            );
         }
 
         verification.markUsed(now);
     }
 
     /*
-     공통 처리
+     PostgreSQL 트랜잭션 단위 advisory lock
 
-     PostgreSQL 트랜잭션 단위 advisory lock.
-     같은 이메일·목적의 발송, 확인, 사용 요청을 순서대로 처리.
-     트랜잭션 종료 시 DB가 잠금을 해제.
+     같은 이메일·목적의 발송, 확인, 사용 요청을 순서대로 처리
+     트랜잭션 종료 시 잠금 해제
 
-     JdbcTemplate은 JPA와 동일한 DataSource를 사용해야 함.
+     JdbcTemplate과 JPA는 동일한 DataSource를 사용
      */
     private void lockEmail(
             String email,
@@ -390,7 +449,12 @@ public class EmailVerificationService {
             String purpose
     ) {
         String lockKey =
-                "email-verification:" + purpose + ":" + email + "@" + emailAdr;
+                "email-verification:"
+                        + purpose
+                        + ":"
+                        + email
+                        + "@"
+                        + emailAdr;
 
         jdbcTemplate.execute((ConnectionCallback<Void>) connection -> {
             try (PreparedStatement statement = connection.prepareStatement(
@@ -408,10 +472,14 @@ public class EmailVerificationService {
             String value,
             String message
     ) {
-        return requiredText(value, message).toLowerCase(Locale.ROOT);
+        return requiredText(value, message)
+                .toLowerCase(Locale.ROOT);
     }
 
-    private static void validateEmail(String email, String emailAdr) {
+    private static void validateEmail(
+            String email,
+            String emailAdr
+    ) {
         if (email.length() > 50
                 || !EMAIL_LOCAL_PATTERN.matcher(email).matches()) {
             throw badRequest("이메일 아이디 형식을 확인해 주세요.");
@@ -423,7 +491,10 @@ public class EmailVerificationService {
         }
     }
 
-    private static String requiredText(String value, String message) {
+    private static String requiredText(
+            String value,
+            String message
+    ) {
         if (value == null || value.isBlank()) {
             throw badRequest(message);
         }
@@ -431,8 +502,10 @@ public class EmailVerificationService {
         return value.trim();
     }
 
+    // 인증 증명 원문 생성
     private static String createToken() {
         byte[] bytes = new byte[32];
+
         RANDOM.nextBytes(bytes);
 
         return Base64.getUrlEncoder()
@@ -440,12 +513,14 @@ public class EmailVerificationService {
                 .encodeToString(bytes);
     }
 
+    // 인증 증명은 SHA-256 해시로 DB에 저장
     private static String hashToken(String token) {
         try {
             byte[] hash = MessageDigest.getInstance("SHA-256")
                     .digest(token.getBytes(StandardCharsets.UTF_8));
 
             return HexFormat.of().formatHex(hash);
+
         } catch (NoSuchAlgorithmException exception) {
             throw new IllegalStateException(
                     "인증 증명 해시 생성에 실패했습니다.",
@@ -464,7 +539,9 @@ public class EmailVerificationService {
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
 
-    private void refreshVerification(EmailVerification verification) {
+    private void refreshVerification(
+            EmailVerification verification
+    ) {
         entityManager.refresh(verification);
     }
 }
