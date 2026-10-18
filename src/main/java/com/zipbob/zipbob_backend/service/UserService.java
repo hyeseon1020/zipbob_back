@@ -32,6 +32,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
+    private final EmailVerificationService emailVerificationService;
 
     // 영문 대소문자·숫자·_, 4~50자
     private static final Pattern USER_ID_PATTERN =
@@ -136,7 +137,14 @@ public class UserService {
         // 5. 아이디·닉네임·이메일·기기 중복 검사
         checkDuplicates(userId, userName, email, emailAdr, userDeviceId);
 
-        // 6. 회원 INSERT
+        // 6. 이메일 인증 증명 검증 및 사용 처리
+        emailVerificationService.verifyAndUseForSignup(
+                email,
+                emailAdr,
+                request.getVerificationToken()
+        );
+
+        // 7. 회원 INSERT
         int inserted = userRepository.insertUser(
                 userId,
                 userDeviceId,

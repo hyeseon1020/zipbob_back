@@ -105,13 +105,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
 
-                        // 회원가입·로그인·재발급·로그아웃
+                        // 회원가입·로그인·재발급·로그아웃·이메일 인증
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/users/signup",
                                 "/api/users/login",
                                 "/api/users/refresh",
-                                "/api/users/logout"
+                                "/api/users/logout",
+                                "/api/email-verifications/send",
+                                "/api/email-verifications/confirm"
                         ).permitAll()
 
                         // 회원 전용

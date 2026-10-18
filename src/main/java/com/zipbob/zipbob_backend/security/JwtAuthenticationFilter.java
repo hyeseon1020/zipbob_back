@@ -33,7 +33,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/users/signup",
             "/api/users/login",
             "/api/users/refresh",
-            "/api/users/logout"
+            "/api/users/logout",
+            "/api/email-verifications/send",
+            "/api/email-verifications/confirm"
     );
 
     public JwtAuthenticationFilter(

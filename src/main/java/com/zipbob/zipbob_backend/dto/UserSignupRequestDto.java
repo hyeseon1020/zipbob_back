@@ -8,20 +8,21 @@ import lombok.NoArgsConstructor;
 /*
 회원가입 요청 DTO (프론트 -> 백엔드)
 {
-  "userId": "dongin97",
+  "userId": "testuser",
   "userPw": "Zipbob123!",
   "userPwConfirm": "Zipbob123!",
-  "userName": "사과",
-  "email": "dongin97",
+  "userName": "집밥테스터",
+  "email": "test",
   "emailAdr": "gmail.com",
-  "userDeviceId": 5
+  "userDeviceId": 5,
+  "verificationToken": "인증번호 확인 API에서 받은 verificationToken"
 }
 */
 public class UserSignupRequestDto {
 
     private String userId;
     private String userPw;
-    // 확인용으로만 사용하고 DB에는 저장하지 않음
+    // 비밀번호 확인용 — DB 저장 안 함
     private String userPwConfirm;
     // 닉네임
     private String userName;
@@ -29,6 +30,8 @@ public class UserSignupRequestDto {
     private String email;
     // 이메일 도메인
     private String emailAdr;
-    // 앱 시작 시 기기 등록 API에서 받은 번호
+    // 앱 시작 시 등록한 기기 ID
     private Integer userDeviceId;
+    // 이메일 인증 성공 후 받은 증명 토큰
+    private String verificationToken;
 }
