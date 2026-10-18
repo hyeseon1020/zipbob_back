@@ -40,23 +40,6 @@ public class UserController {
                 .body(response);
     }
 
-    // 가입 입력 오류·중복 오류를 화면에 전달
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<Map<String, Object>> handleSignupError(
-            ResponseStatusException exception
-    ) {
-        String message = exception.getReason() == null
-                ? "요청을 처리할 수 없습니다."
-                : exception.getReason();
-
-        return ResponseEntity
-                .status(exception.getStatusCode())
-                .body(Map.<String, Object>of(
-                        "status", exception.getStatusCode().value(),
-                        "message", message
-                ));
-    }
-
     // 로그인 정보 검증
     @PostMapping("/login")
     public ResponseEntity<UserLoginResponseDto> login(
@@ -70,7 +53,7 @@ public class UserController {
                 .body(response);
     }
 
-    // 회원가입·로그인 입력 오류를 화면에 전달
+    // 회원가입·로그인 등 사용자 API의 요청 오류 처리
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleUserError(
             ResponseStatusException exception
@@ -81,6 +64,7 @@ public class UserController {
 
         return ResponseEntity
                 .status(exception.getStatusCode())
+                .header("Cache-Control", "no-store")
                 .body(Map.<String, Object>of(
                         "status", exception.getStatusCode().value(),
                         "message", message
