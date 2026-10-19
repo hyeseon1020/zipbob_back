@@ -63,4 +63,11 @@ public class User {
         this.updatedId = this.userId;
         this.updatedDt = LocalDateTime.now();
     }
+
+    // 검증이 완료된 닉네임으로 변경
+    public void changeNickname(String userName) {
+        this.userName = userName;
+        this.updatedId = this.userId;
+        this.updatedDt = LocalDateTime.now();
+    }
 }

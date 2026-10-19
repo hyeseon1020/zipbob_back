@@ -120,6 +120,12 @@ public class SecurityConfig {
                                 "/api/users/me"
                         ).authenticated()
 
+                        // 닉네임 변경 API
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/users/me/nickname"
+                        ).authenticated()
+
                         // 비회원 조회 API
                         .requestMatchers(
                                 HttpMethod.GET,
