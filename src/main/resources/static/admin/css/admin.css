@@ -1,0 +1,437 @@
+/*공통 레이아웃·표·입력폼 스타일*/
+@charset "UTF-8";
+
+@font-face {
+    font-family: "GmarketSans";
+    src: url("../fonts/GmarketSansTTFLight.ttf") format("truetype");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GmarketSans";
+    src: url("../fonts/GmarketSansTTFMedium.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GmarketSans";
+    src: url("../fonts/GmarketSansTTFBold.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* 공통 색상 및 크기 */
+:root {
+    --color-primary: #ef7544;
+    --color-primary-hover: #d85b29;
+    --color-primary-soft: #fff0e8;
+
+    --color-background: #fffaf5;
+    --color-surface: #ffffff;
+
+    --color-text: #222222;
+    --color-text-muted: #666666;
+    --color-border: #eadfd5;
+    --color-danger: #b42318;
+
+    --radius: 10px;
+    --sidebar-width: 220px;
+    --header-height: 72px;
+}
+
+/* 기본 설정 */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 32px;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: "GmarketSans", "Malgun Gothic", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.6;
+    letter-spacing: -0.5px;
+}
+
+h1,
+h2,
+h3,
+p {
+    margin: 0;
+}
+
+h1 {
+    margin-bottom: 24px;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+h2 {
+    margin-bottom: 16px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+h3 {
+    margin-bottom: 12px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    letter-spacing: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 3px;
+}
+
+/* 관리자 전체 레이아웃 */
+body.admin-layout {
+    padding: 0;
+}
+
+.admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--header-height);
+    padding: 16px 28px;
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    gap: 16px;
+}
+
+.admin-logo {
+    color: var(--color-primary);
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.admin-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.admin-container {
+    display: flex;
+    min-height: calc(100vh - var(--header-height));
+}
+
+.admin-sidebar {
+    flex: 0 0 var(--sidebar-width);
+    padding: 24px 16px;
+    background-color: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+}
+
+.admin-menu {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    gap: 8px;
+}
+
+.admin-menu a {
+    display: block;
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    color: var(--color-text-muted);
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.admin-menu a:hover,
+.admin-menu a.active {
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary-hover);
+}
+
+.admin-content {
+    flex: 1;
+    min-width: 0;
+    padding: 32px;
+}
+
+/* 페이지 제목 및 카드 */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.page-header h1 {
+    margin-bottom: 0;
+}
+
+.card {
+    padding: 24px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 16px rgb(80 45 20 / 4%);
+}
+
+.text-muted {
+    color: var(--color-text-muted);
+}
+
+/* 버튼 */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 20px;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: center;
+    gap: 8px;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-text);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.btn-outline {
+    background-color: var(--color-surface);
+    border-color: var(--color-primary);
+    color: var(--color-primary-hover);
+}
+
+.btn-outline:hover {
+    background-color: var(--color-primary-soft);
+}
+
+.btn-secondary {
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-background);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.button-group {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* 입력폼 및 검색 */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 14px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-text);
+}
+
+.form-control:focus {
+    border-color: var(--color-primary);
+}
+
+textarea.form-control {
+    min-height: 140px;
+    resize: vertical;
+}
+
+.form-help {
+    margin-top: 6px;
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+.form-error {
+    margin-top: 6px;
+    color: var(--color-danger);
+    font-size: 12px;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.search-bar .form-control {
+    flex: 1;
+    width: auto;
+    min-width: 180px;
+}
+
+/* 목록 테이블 */
+.table-wrapper {
+    overflow-x: auto;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+}
+
+.admin-table th {
+    background-color: var(--color-primary-soft);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.admin-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.admin-table tbody tr:hover {
+    background-color: var(--color-background);
+}
+
+.empty-state {
+    padding: 48px 20px;
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+/* 로그인 화면 */
+body.login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 36px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgb(80 45 20 / 6%);
+}
+
+.login-card h1 {
+    text-align: center;
+}
+
+.login-card .btn {
+    width: 100%;
+}
+
+/* 작은 화면 */
+@media (max-width: 768px) {
+    body {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    .admin-header {
+        padding: 16px;
+        flex-wrap: wrap;
+    }
+
+    .admin-container {
+        flex-direction: column;
+    }
+
+    .admin-sidebar {
+        flex: none;
+        width: 100%;
+        border-right: 0;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .admin-menu {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .admin-content {
+        padding: 20px;
+    }
+
+    .card,
+    .login-card {
+        padding: 24px;
+    }
+}
