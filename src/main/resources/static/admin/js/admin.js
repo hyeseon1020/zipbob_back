@@ -1,0 +1,1 @@
+// 집밥PICK 관리자 페이지 공통 JavaScript
