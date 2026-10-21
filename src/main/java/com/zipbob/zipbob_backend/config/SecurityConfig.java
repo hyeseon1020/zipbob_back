@@ -101,6 +101,24 @@ public class SecurityConfig {
                                 "/**"
                         ).permitAll()
 
+                        // 관리자 HTML 화면 확인용 임시 허용
+                        // 관리자 인증 구현 시 관리자 권한 검사로 변경
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/admin",
+                                "/admin/**"
+                        ).permitAll()
+
+                        // 정적 리소스
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/css/**",
+                                "/js/**",
+                                "/fonts/**",
+                                "/images/**",
+                                "/favicon.ico"
+                        ).permitAll()
+
                         // 로그인 없이 사용하는 회원·인증 API
                         .requestMatchers(
                                 HttpMethod.POST,
@@ -135,9 +153,7 @@ public class SecurityConfig {
                                 "/api/menufilter",
                                 "/api/favorites",
                                 "/api/recent-recipes",
-                                "/api/test",
-                                "/images/**",
-                                "/favicon.ico"
+                                "/api/test"
                         ).permitAll()
 
                         // 기기 등록·조건 추천
