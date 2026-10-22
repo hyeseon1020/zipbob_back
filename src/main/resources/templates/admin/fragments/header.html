@@ -1,13 +1,43 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>관리자 공통 헤더 | 집밥PICK</title>
-    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
-</head>
 <body>
-<header th:fragment="header">
-    <h1>관리자 공통 헤더</h1>
+
+<header class="admin-header" th:fragment="header">
+    <a class="brand"
+       th:href="@{/admin/dashboard}"
+       aria-label="집밥PICK 대시보드">
+
+        <img th:src="@{/admin/images/zipbob_pick_logo.png}"
+             alt="집밥PICK">
+
+        <span class="brand-badge">관리자</span>
+    </a>
+    <!-- 로고·로그인 아이디·로그아웃 버튼 -->
+    <div class="header-actions">
+        <div class="account">
+            <span class="account-avatar" aria-hidden="true">
+                <svg class="icon">
+                    <use th:href="@{/admin/images/admin-icons.svg#users}"></use>
+                </svg>
+            </span>
+
+            <span class="account-name">
+                <strong th:text="${adminId}">admin</strong>
+                <small>관리자 계정</small>
+            </span>
+        </div>
+
+        <form th:action="@{/admin/logout}" method="post">
+            <button type="submit" class="btn btn-outline">
+                <svg class="icon" aria-hidden="true">
+                    <use th:href="@{/admin/images/admin-icons.svg#logout}"></use>
+                </svg>
+
+                로그아웃
+            </button>
+        </form>
+    </div>
 </header>
+
 </body>
 </html>

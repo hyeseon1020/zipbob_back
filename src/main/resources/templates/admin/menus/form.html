@@ -1,12 +1,22 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>메뉴 등록·수정 | 집밥PICK 관리자</title>
-    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
-</head>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{admin/fragments/layout :: layout('메뉴 등록', 'menus', ~{::content})}">
 <body>
-<h1>메뉴·레시피 등록 및 수정</h1>
+
+<section class="card" th:fragment="content">
+    <div class="card-heading">
+        <h2>메뉴 등록</h2>
+        <span class="status-badge">준비 중</span>
+    </div>
+
+    <div class="empty-state">
+        <p>메뉴 등록 기능을 준비하고 있어요.</p>
+
+        <a th:href="@{/admin/menus}" class="btn btn-outline">
+            목록으로 돌아가기
+        </a>
+    </div>
+</section>
+
 </body>
 </html>

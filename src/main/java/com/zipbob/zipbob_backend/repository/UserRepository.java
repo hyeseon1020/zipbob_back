@@ -76,4 +76,34 @@ public interface UserRepository extends JpaRepository<User, String> {
             @Param("email") String email,
             @Param("emailAdr") String emailAdr
     );
+
+    /*
+     관리자 초기 생성 전용 INSERT
+     비밀번호는 BCrypt 해시를 전달받음
+     기기와 이메일은 연결하지 않음
+     중복 시 기존 계정을 수정하지 않음
+     */
+    @Modifying
+    @Query(value = """
+        INSERT INTO zipbob_app.user_mng (
+            user_id,
+            user_pw,
+            user_name,
+            user_role,
+            created_id
+        )
+        VALUES (
+            :userId,
+            :encodedPassword,
+            :userName,
+            'ADMIN',
+            :userId
+        )
+        ON CONFLICT DO NOTHING
+        """, nativeQuery = true)
+    int insertAdmin(
+            @Param("userId") String userId,
+            @Param("encodedPassword") String encodedPassword,
+            @Param("userName") String userName
+    );
 }

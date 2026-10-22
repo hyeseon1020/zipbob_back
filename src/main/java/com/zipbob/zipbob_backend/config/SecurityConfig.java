@@ -8,6 +8,7 @@ import jakarta.servlet.DispatcherType;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.NullSecurityContextRepository;
 
 @Configuration
 @EnableWebSecurity
@@ -40,6 +42,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtTokenProvider jwtTokenProvider,
@@ -47,23 +50,27 @@ public class SecurityConfig {
             AuthenticationEntryPoint authenticationEntryPoint
     ) throws Exception {
 
-        JwtAuthenticationFilter jwtFilter =
-                new JwtAuthenticationFilter(
-                        jwtTokenProvider,
-                        userRepository,
-                        authenticationEntryPoint
-                );
+        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(
+                jwtTokenProvider,
+                userRepository,
+                authenticationEntryPoint
+        );
 
         http
                 // 기존 WebConfig의 CORS 설정 사용
                 .cors(Customizer.withDefaults())
 
-                // Authorization 헤더로 인증하는 API
+                // Authorization 헤더로 인증하는 앱 API
                 .csrf(csrf -> csrf.disable())
 
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // 관리자 세션을 앱 API 인증에 사용하지 않음
+                .securityContext(context -> context
+                        .securityContextRepository(
+                                new NullSecurityContextRepository()
                         )
                 )
 
@@ -73,9 +80,7 @@ public class SecurityConfig {
                 .logout(logout -> logout.disable())
 
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(
-                                authenticationEntryPoint
-                        )
+                        .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler((request, response, error) -> {
                             response.setStatus(403);
                             response.setCharacterEncoding("UTF-8");
@@ -92,36 +97,18 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                        // 오류 처리 요청 허용
-                        .dispatcherTypeMatchers(
-                                DispatcherType.ERROR
-                        ).permitAll()
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 
-                        // CORS 사전 요청 허용
-                        .requestMatchers(
-                                HttpMethod.OPTIONS,
-                                "/**"
-                        ).permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // 관리자 HTML 화면 확인용 임시 허용
-                        // 관리자 인증 구현 시 관리자 권한 검사로 변경
+                        // 공개 정적 리소스
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/admin",
-                                "/admin/**"
+                                "/css/**", "/js/**", "/fonts/**",
+                                "/images/**", "/favicon.ico"
                         ).permitAll()
 
-                        // 정적 리소스
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/css/**",
-                                "/js/**",
-                                "/fonts/**",
-                                "/images/**",
-                                "/favicon.ico"
-                        ).permitAll()
-
-                        // 로그인 없이 사용하는 회원·인증 API
+                        // 공개 회원·인증 API
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/users/signup",
@@ -134,7 +121,7 @@ public class SecurityConfig {
                                 "/api/email-verifications/confirm"
                         ).permitAll()
 
-                        // 회원 전용 조회 API
+                        // 회원 전용 조회
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/users/me",
@@ -142,8 +129,7 @@ public class SecurityConfig {
                                 "/api/recent-recipes"
                         ).authenticated()
 
-                        // 회원 전용 수정·등록 API
-                        // 닉네임 변경, 즐겨찾기 등록, 최근 본 레시피 기록
+                        // 회원 전용 수정·등록
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/users/me/nickname",
@@ -151,14 +137,13 @@ public class SecurityConfig {
                                 "/api/recent-recipes/*"
                         ).authenticated()
 
-                        // 회원 전용 삭제 API
-                        // 즐겨찾기 해제
+                        // 회원 전용 삭제
                         .requestMatchers(
                                 HttpMethod.DELETE,
                                 "/api/favorites/*"
                         ).authenticated()
 
-                        // 비회원 조회 API
+                        // 비회원 조회
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/menus",
@@ -175,7 +160,6 @@ public class SecurityConfig {
                                 "/api/menufilter/recommend"
                         ).permitAll()
 
-                        // 위에서 허용하지 않은 요청은 차단
                         .anyRequest().denyAll()
                 )
 

@@ -1,13 +1,71 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>관리자 공통 사이드바 | 집밥PICK</title>
-    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
-</head>
 <body>
-<nav th:fragment="sidebar">
-    <h1>관리자 공통 사이드바</h1>
-</nav>
+
+<aside class="admin-sidebar" th:fragment="sidebar(activeMenu)">
+    <p class="sidebar-label">관리 메뉴</p>
+
+    <nav aria-label="관리자 메뉴">
+        <ul class="admin-menu">
+            <li>
+                <a th:href="@{/admin/dashboard}"
+                   th:classappend="${activeMenu == 'dashboard' ? 'is-active' : ''}"
+                   th:attr="aria-current=${activeMenu == 'dashboard' ? 'page' : null}">
+
+                    <svg class="icon" aria-hidden="true">
+                        <use th:href="@{/admin/images/admin-icons.svg#dashboard}"></use>
+                    </svg>
+
+                    대시보드
+                </a>
+            </li>
+
+            <li>
+                <a th:href="@{/admin/menus}"
+                   th:classappend="${activeMenu == 'menus' ? 'is-active' : ''}"
+                   th:attr="aria-current=${activeMenu == 'menus' ? 'page' : null}">
+
+                    <svg class="icon" aria-hidden="true">
+                        <use th:href="@{/admin/images/admin-icons.svg#bowl}"></use>
+                    </svg>
+
+                    메뉴 관리
+                </a>
+            </li>
+
+            <li>
+                <a th:href="@{/admin/codes}"
+                   th:classappend="${activeMenu == 'codes' ? 'is-active' : ''}"
+                   th:attr="aria-current=${activeMenu == 'codes' ? 'page' : null}">
+
+                    <svg class="icon" aria-hidden="true">
+                        <use th:href="@{/admin/images/admin-icons.svg#codes}"></use>
+                    </svg>
+
+                    공통코드 관리
+                </a>
+            </li>
+
+            <li>
+                <a th:href="@{/admin/users}"
+                   th:classappend="${activeMenu == 'users' ? 'is-active' : ''}"
+                   th:attr="aria-current=${activeMenu == 'users' ? 'page' : null}">
+
+                    <svg class="icon" aria-hidden="true">
+                        <use th:href="@{/admin/images/admin-icons.svg#users}"></use>
+                    </svg>
+
+                    회원 관리
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-note">
+        <strong>집밥PICK</strong>
+        <p>오늘의 한 끼,<br>간편하게 준비하세요.</p>
+    </div>
+</aside>
+
 </body>
 </html>
