@@ -13,8 +13,8 @@ import java.util.Objects;
         // 기기 ID + 메뉴 ID 중복 방지 규칙을 Entity에도 명시
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uq_recent_recipe_device_menu",
-                        columnNames = {"user_device_id", "menu_id"}
+                        name = "uq_recent_recipe_user_menu",
+                        columnNames = {"user_id", "menu_id"}
                 )
         }
 )
@@ -28,9 +28,9 @@ public class RecentRecipe {
     @Column(name = "recent_recipe_id")
     private Integer recentRecipeId;
 
-    // 사용자 기기 테이블의 숫자 PK
-    @Column(name = "user_device_id", nullable = false, updatable = false)
-    private Integer userDeviceId;
+    // 유저 ID
+    @Column(name = "user_id", nullable = false, updatable = false, length = 50)
+    private String  userId;
 
     // 메뉴 테이블의 숫자 PK
     @Column(name = "menu_id", nullable = false, updatable = false)
@@ -49,21 +49,24 @@ public class RecentRecipe {
     기존 기록 수정 - Service의 트랜잭션 안에서 Repository로 Entity 조회 → updateViewedDt() 호출 → JPA 변경 감지로 UPDATE 실행
     초과 기록 삭제 - 기기별 기록이 5개를 초과하면 → Repository로 가장 오래된 기록을 찾아 삭제
     */
+
     // 처음 본 레시피의 기록 생성
     public RecentRecipe(
-            Integer userDeviceId,
+            String userId,
             Integer menuId,
             LocalDateTime viewedDt
     ) {
-        this.userDeviceId =
-                Objects.requireNonNull(userDeviceId, "기기 ID는 필수입니다.");
+        this.userId =
+                Objects.requireNonNull(userId, "회원 ID는 필수입니다.");
+
         this.menuId =
                 Objects.requireNonNull(menuId, "메뉴 ID는 필수입니다.");
+
         this.viewedDt =
                 Objects.requireNonNull(viewedDt, "조회 시간은 필수입니다.");
     }
 
-    // 이미 본 레시피를 다시 보면 조회 시간만 변경
+    // 이미 본 메뉴는 새로운 기록을 만들지 않고 시간만 갱신
     public void updateViewedDt(LocalDateTime viewedDt) {
         this.viewedDt =
                 Objects.requireNonNull(viewedDt, "조회 시간은 필수입니다.");

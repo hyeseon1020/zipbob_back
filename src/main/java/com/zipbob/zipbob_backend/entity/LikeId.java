@@ -21,14 +21,14 @@ public class LikeId implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @Column(name = "user_device_id", nullable = false)
-    private Integer userDeviceId;
+    @Column(name = "user_id", nullable = false, length = 50)
+    private String userId;
 
     @Column(name = "menu_id", nullable = false)
     private Integer menuId;
 
-    public LikeId(Integer userDeviceId, Integer menuId) {
-        this.userDeviceId = userDeviceId;
+    public LikeId(String userId, Integer menuId) {
+        this.userId = userId;
         this.menuId = menuId;
     }
 }

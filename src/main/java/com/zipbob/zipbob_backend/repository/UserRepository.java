@@ -2,7 +2,9 @@ package com.zipbob.zipbob_backend.repository;
 
 import com.zipbob.zipbob_backend.entity.User;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,8 +29,16 @@ public interface UserRepository extends JpaRepository<User, String> {
             String emailAdr
     );
 
-    // 같은 기기로 가입한 회원이 있는지 검사
-    boolean existsByUserDevice_UserDeviceId(Integer userDeviceId);
+    // 같은 회원의 최근 조회 저장 요청을 순서대로 처리
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT u
+        FROM User u
+        WHERE u.userId = :userId
+        """)
+    Optional<User> findByIdForUpdate(
+            @Param("userId") String userId
+    );
 
     /*
      회원가입 전용 INSERT
@@ -38,27 +48,24 @@ public interface UserRepository extends JpaRepository<User, String> {
      */
     @Modifying
     @Query(value = """
-        INSERT INTO zipbob_app.user_mng
-            (
-                user_id,
-                user_device_id,
-                user_pw,
-                user_name,
-                email,
-                email_adr,
-                created_id
-            )
-        VALUES
-            (
-                :userId,
-                :userDeviceId,
-                :userPw,
-                :userName,
-                :email,
-                :emailAdr,
-                :userId
-            )
-        -- PostgreSQL의 중복 처리 문법          
+        INSERT INTO zipbob_app.user_mng (
+            user_id,
+            user_device_id,
+            user_pw,
+            user_name,
+            email,
+            email_adr,
+            created_id
+        )
+        VALUES (
+            :userId,
+            :userDeviceId,
+            :userPw,
+            :userName,
+            :email,
+            :emailAdr,
+            :userId
+        )
         ON CONFLICT DO NOTHING
         """, nativeQuery = true)
     int insertUser(

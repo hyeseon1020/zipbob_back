@@ -5,6 +5,7 @@ import com.zipbob.zipbob_backend.entity.RecentRecipe;
 import com.zipbob.zipbob_backend.repository.MenuRepository;
 import com.zipbob.zipbob_backend.repository.RecentRecipeRepository;
 import com.zipbob.zipbob_backend.repository.UserDeviceRepository;
+import com.zipbob.zipbob_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,23 +24,22 @@ public class RecentRecipeService {
     private static final int MAX_RECENT_RECIPES = 5;
 
     private final RecentRecipeRepository recentRecipeRepository;
-    private final UserDeviceRepository userDeviceRepository;
+    private final UserRepository userRepository;
     private final MenuRepository menuRepository;
 
     // 최근 본 레시피 기록 저장 또는 조회 시간 갱신
     @Transactional
-    public void recordView(Integer userDeviceId, Integer menuId) {
+    public void recordView(String  userId, Integer menuId) {
 
         // 1. 전달받은 ID 검증
-        validateUserDeviceId(userDeviceId);
+        validateUserId(userId);
         validateMenuId(menuId);
 
-        // 2. 기기 존재 확인 및 잠금
-        // 같은 기기의 다른 기록 저장 요청은 이 트랜잭션이 끝날 때까지 대기
-        userDeviceRepository.findByIdForUpdate(userDeviceId)
+        // 2. 여러 기기에서 들어오는 같은 회원의 요청을 직렬화
+        userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "등록된 기기를 찾을 수 없습니다."
+                        "회원 정보를 찾을 수 없습니다."
                 ));
 
         // 3. 메뉴 존재 확인
@@ -52,8 +52,8 @@ public class RecentRecipeService {
 
         // 4. 기존 기록 조회
         Optional<RecentRecipe> existingRecord =
-                recentRecipeRepository.findByUserDeviceIdAndMenuId(
-                        userDeviceId,
+                recentRecipeRepository.findByUserIdAndMenuId(
+                        userId,
                         menuId
                 );
 
@@ -70,7 +70,7 @@ public class RecentRecipeService {
 
             // 5-2. 처음 본 메뉴: Entity 생성 후 저장
             RecentRecipe recentRecipe = new RecentRecipe(
-                    userDeviceId,
+                    userId,
                     menuId,
                     viewedDt
             );
@@ -84,8 +84,8 @@ public class RecentRecipeService {
 
         List<RecentRecipe> records =
                 recentRecipeRepository
-                        .findAllByUserDeviceIdOrderByViewedDtDescRecentRecipeIdDesc(
-                                userDeviceId
+                        .findAllByUserIdOrderByViewedDtDescRecentRecipeIdDesc(
+                                userId
                         );
 
         // 7. 앞의 5개를 유지하고, 6번째부터 삭제
@@ -98,35 +98,33 @@ public class RecentRecipeService {
         }
     }
 
-    // 기기별 최근 본 레시피 목록 조회
+    // 유저별 최근 본 레시피 목록 조회
     @Transactional(readOnly = true)
-    public List<RecentRecipeResponseDto> getRecentRecipes(
-            Integer userDeviceId
-    ) {
+    public List<RecentRecipeResponseDto> getRecentRecipes(String  userId) {
 
-        validateUserDeviceId(userDeviceId);
+        validateUserId(userId);
 
-        // 존재하지 않는 기기와 기록이 없는 기기를 구분
-        if (!userDeviceRepository.existsById(userDeviceId)) {
+        // 존재하지 않는 유저와 기록이 없는 유저를 구분
+        if (!userRepository.existsById(userId)) {
             throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "등록된 기기를 찾을 수 없습니다."
+                    HttpStatus.UNAUTHORIZED,
+                    "회원 정보를 찾을 수 없습니다."
             );
         }
 
         // Projection을 API 응답 DTO로 변환
         return recentRecipeRepository
-                .findRecentRecipeMenus(userDeviceId)
+                .findRecentRecipeMenus(userId)
                 .stream()
                 .map(RecentRecipeResponseDto::new)
                 .toList();
     }
 
-    private void validateUserDeviceId(Integer userDeviceId) {
-        if (userDeviceId == null || userDeviceId <= 0) {
+    private void validateUserId(String userId) {
+        if (userId == null || userId.isBlank()) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "기기 ID는 양수여야 합니다."
+                    HttpStatus.UNAUTHORIZED,
+                    "로그인이 필요합니다."
             );
         }
     }

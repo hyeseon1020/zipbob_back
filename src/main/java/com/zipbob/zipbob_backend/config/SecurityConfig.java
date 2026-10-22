@@ -92,10 +92,12 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+                        // 오류 처리 요청 허용
                         .dispatcherTypeMatchers(
                                 DispatcherType.ERROR
                         ).permitAll()
 
+                        // CORS 사전 요청 허용
                         .requestMatchers(
                                 HttpMethod.OPTIONS,
                                 "/**"
@@ -132,16 +134,28 @@ public class SecurityConfig {
                                 "/api/email-verifications/confirm"
                         ).permitAll()
 
-                        // 회원 전용 API
+                        // 회원 전용 조회 API
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/users/me"
+                                "/api/users/me",
+                                "/api/favorites",
+                                "/api/recent-recipes"
                         ).authenticated()
 
-                        // 닉네임 변경 API
+                        // 회원 전용 수정·등록 API
+                        // 닉네임 변경, 즐겨찾기 등록, 최근 본 레시피 기록
                         .requestMatchers(
                                 HttpMethod.PUT,
-                                "/api/users/me/nickname"
+                                "/api/users/me/nickname",
+                                "/api/favorites/*",
+                                "/api/recent-recipes/*"
+                        ).authenticated()
+
+                        // 회원 전용 삭제 API
+                        // 즐겨찾기 해제
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/favorites/*"
                         ).authenticated()
 
                         // 비회원 조회 API
@@ -151,8 +165,6 @@ public class SecurityConfig {
                                 "/api/menus/**",
                                 "/api/codes/**",
                                 "/api/menufilter",
-                                "/api/favorites",
-                                "/api/recent-recipes",
                                 "/api/test"
                         ).permitAll()
 
@@ -163,18 +175,7 @@ public class SecurityConfig {
                                 "/api/menufilter/recommend"
                         ).permitAll()
 
-                        // 기기 기반 즐겨찾기·최근 본 레시피
-                        .requestMatchers(
-                                HttpMethod.PUT,
-                                "/api/favorites/*",
-                                "/api/recent-recipes/*"
-                        ).permitAll()
-
-                        .requestMatchers(
-                                HttpMethod.DELETE,
-                                "/api/favorites/*"
-                        ).permitAll()
-
+                        // 위에서 허용하지 않은 요청은 차단
                         .anyRequest().denyAll()
                 )
 
