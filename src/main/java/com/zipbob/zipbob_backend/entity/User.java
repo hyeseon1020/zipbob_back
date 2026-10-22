@@ -32,6 +32,10 @@ public class User {
     @Column(name = "user_name", nullable = false, length = 50)
     private String userName;
 
+    // 회원 권한: USER / ADMIN
+    @Column(name = "user_role", nullable = false, length = 20)
+    private String userRole = "USER";
+
     // 이메일 @ 앞부분
     @Column(name = "email", length = 50)
     private String email;
@@ -56,6 +60,11 @@ public class User {
     // 수정일
     @Column(name = "updated_dt")
     private LocalDateTime updatedDt;
+
+    // 관리자 여부 확인
+    public boolean isAdmin() {
+        return "ADMIN".equals(this.userRole);
+    }
 
     // 이미 해시한 비밀번호를 전달받아 변경
     public void changePassword(String encodedPassword) {

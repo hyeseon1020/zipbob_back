@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" th:fragment="layout(pageTitle, activeMenu, content)">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title th:text="${pageTitle} + ' | 집밥PICK 관리자'">집밥PICK 관리자</title>
+        <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+    </head>
+    <!-- 전체 관리자 화면의 공통 틀 -->
+    <body class="admin-layout">     <a class="skip-link" href="#main-content">본문 바로가기</a>
+        <header th:replace="~{admin/fragments/header :: header}"></header>
+
+        <div class="admin-shell">
+            <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeMenu})}"></aside>
+
+            <main class="admin-content" id="main-content" tabindex="-1">
+                <div class="page-heading">
+                    <p class="breadcrumb">
+                        <a th:href="@{/admin/dashboard}">집밥PICK</a>
+                        <span aria-hidden="true">/</span>
+                        <span th:text="${pageTitle}">대시보드</span>
+                    </p>
+
+                    <h1 th:text="${pageTitle}">대시보드</h1>
+                </div>
+
+                <th:block th:replace="${content}"></th:block>
+
+                <footer class="admin-footer">
+                    집밥PICK · 오늘의 한 끼, 간편하게.
+                </footer>
+            </main>
+        </div>
+
+    </body>
+</html>
