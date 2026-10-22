@@ -4,17 +4,15 @@ import com.zipbob.zipbob_backend.dto.FindIdRequestDto;
 import com.zipbob.zipbob_backend.dto.ResetPasswordRequestDto;
 import com.zipbob.zipbob_backend.dto.UserLoginRequestDto;
 import com.zipbob.zipbob_backend.dto.UserLoginResponseDto;
+import com.zipbob.zipbob_backend.dto.UserMeResponseDto;
 import com.zipbob.zipbob_backend.dto.UserSignupRequestDto;
 import com.zipbob.zipbob_backend.dto.UserSignupResponseDto;
-import com.zipbob.zipbob_backend.dto.UserMeResponseDto;
 import com.zipbob.zipbob_backend.entity.User;
 import com.zipbob.zipbob_backend.repository.UserDeviceRepository;
 import com.zipbob.zipbob_backend.repository.UserRefreshTokenRepository;
 import com.zipbob.zipbob_backend.repository.UserRepository;
 import com.zipbob.zipbob_backend.security.JwtTokenProvider;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -37,11 +35,9 @@ public class UserService {
     private final EmailVerificationService emailVerificationService;
     private final UserRefreshTokenRepository userRefreshTokenRepository;
 
-    // 영문 대소문자·숫자·밑줄, 4~50자
     private static final Pattern USER_ID_PATTERN =
             Pattern.compile("[A-Za-z0-9_]{4,50}");
 
-    // 한글 완성형·영문·숫자·밑줄, 2~20자
     private static final Pattern USER_NAME_PATTERN =
             Pattern.compile("[가-힣A-Za-z0-9_]{2,20}");
 
@@ -86,7 +82,6 @@ public class UserService {
                 "이메일 도메인을 입력해 주세요."
         ).toLowerCase(Locale.ROOT);
 
-        // 비밀번호는 공백 제거 없이 입력값 그대로 사용
         String userPw = request.getUserPw();
 
         if (!USER_ID_PATTERN.matcher(userId).matches()) {
@@ -123,10 +118,10 @@ public class UserService {
             throw badRequest("등록된 기기 ID가 필요합니다.");
         }
 
-        String encodedPassword =
-                passwordEncoder.encode(userPw);
+        String encodedPassword = passwordEncoder.encode(userPw);
 
-        // 같은 기기의 동시 가입 요청을 순서대로 처리
+        // 가입 기기의 존재를 확인하고 트랜잭션 동안 잠금.
+        // 같은 기기로 가입한 계정이 있어도 가입을 허용한다.
         userDeviceRepository.findByIdForUpdate(userDeviceId)
                 .orElseThrow(() ->
                         badRequest("기기 등록 후 회원가입을 진행해 주세요.")
@@ -136,8 +131,7 @@ public class UserService {
                 userId,
                 userName,
                 email,
-                emailAdr,
-                userDeviceId
+                emailAdr
         );
 
         emailVerificationService.verifyAndUseForSignup(
@@ -160,8 +154,7 @@ public class UserService {
                     userId,
                     userName,
                     email,
-                    emailAdr,
-                    userDeviceId
+                    emailAdr
             );
 
             throw conflict(
@@ -208,17 +201,12 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(UserService::loginFailed);
 
-        if (!passwordEncoder.matches(
-                userPw,
-                user.getUserPw()
-        )) {
+        if (!passwordEncoder.matches(userPw, user.getUserPw())) {
             throw loginFailed();
         }
 
         String accessToken =
-                jwtTokenProvider.createAccessToken(
-                        user.getUserId()
-                );
+                jwtTokenProvider.createAccessToken(user.getUserId());
 
         String refreshToken =
                 refreshTokenService.issue(user);
@@ -231,7 +219,7 @@ public class UserService {
         );
     }
 
-    // 현재 로그인한 회원 정보
+    // 현재 회원 정보
     @Transactional(readOnly = true)
     public UserMeResponseDto getMe(String userId) {
         User user = userRepository.findById(userId)
@@ -262,7 +250,6 @@ public class UserService {
                 "이메일 도메인을 입력해 주세요."
         ).toLowerCase(Locale.ROOT);
 
-        // FIND_ID 목적의 인증 증명인지 검증하고 사용 처리
         emailVerificationService.verifyAndUse(
                 email,
                 emailAdr,
@@ -285,9 +272,7 @@ public class UserService {
             ResetPasswordRequestDto request
     ) {
         if (request == null) {
-            throw badRequest(
-                    "비밀번호 재설정 정보를 입력해 주세요."
-            );
+            throw badRequest("비밀번호 재설정 정보를 입력해 주세요.");
         }
 
         String userId = requiredText(
@@ -305,24 +290,15 @@ public class UserService {
                 "이메일 도메인을 입력해 주세요."
         ).toLowerCase(Locale.ROOT);
 
-        // 회원가입과 같은 비밀번호 규칙 사용
         validatePassword(request.getUserPw());
 
-        if (!request.getUserPw().equals(
-                request.getUserPwConfirm()
-        )) {
-            throw badRequest(
-                    "비밀번호 확인이 일치하지 않습니다."
-            );
+        if (!request.getUserPw().equals(request.getUserPwConfirm())) {
+            throw badRequest("비밀번호 확인이 일치하지 않습니다.");
         }
 
-        // 잠금을 잡기 전에 BCrypt 해시 생성
         String encodedPassword =
-                passwordEncoder.encode(
-                        request.getUserPw()
-                );
+                passwordEncoder.encode(request.getUserPw());
 
-        // RESET_PASSWORD 목적의 인증인지 검증
         emailVerificationService.verifyAndUse(
                 email,
                 emailAdr,
@@ -335,30 +311,23 @@ public class UserService {
                         badRequest("일치하는 회원 정보가 없습니다.")
                 );
 
-        // 입력한 아이디의 가입 이메일인지 확인
         if (!email.equals(user.getEmail())
                 || !emailAdr.equals(user.getEmailAdr())) {
-            throw badRequest(
-                    "일치하는 회원 정보가 없습니다."
-            );
+            throw badRequest("일치하는 회원 정보가 없습니다.");
         }
 
-        // JPA 변경 감지로 비밀번호 UPDATE
         user.changePassword(encodedPassword);
 
-        // 기존 리프레시 토큰 삭제
-        userRefreshTokenRepository.deleteAllByUserId(
-                userId
-        );
+        // 기존의 모든 리프레시 토큰 폐기
+        userRefreshTokenRepository.deleteAllByUserId(userId);
     }
 
-    // 회원가입 중복 검사
+    // 기기 중복은 검사하지 않는다.
     private void checkDuplicates(
             String userId,
             String userName,
             String email,
-            String emailAdr,
-            Integer userDeviceId
+            String emailAdr
     ) {
         if (userRepository.existsById(userId)) {
             throw conflict(
@@ -372,28 +341,14 @@ public class UserService {
             );
         }
 
-        if (userRepository.existsByEmailAndEmailAdr(
-                email,
-                emailAdr
-        )) {
+        if (userRepository.existsByEmailAndEmailAdr(email, emailAdr)) {
             throw conflict("이미 가입된 이메일입니다.");
-        }
-
-        if (userRepository.existsByUserDevice_UserDeviceId(
-                userDeviceId
-        )) {
-            throw conflict(
-                    "이 기기에는 이미 가입된 계정이 있습니다."
-            );
         }
     }
 
-    // 회원가입·비밀번호 재설정 공통 비밀번호 검사
     private static void validatePassword(String password) {
         if (password == null || password.length() < 8) {
-            throw badRequest(
-                    "비밀번호는 8자 이상 입력해 주세요."
-            );
+            throw badRequest("비밀번호는 8자 이상 입력해 주세요.");
         }
 
         if (password.getBytes(StandardCharsets.UTF_8).length > 72) {
@@ -430,18 +385,14 @@ public class UserService {
         return value.trim();
     }
 
-    private static ResponseStatusException badRequest(
-            String message
-    ) {
+    private static ResponseStatusException badRequest(String message) {
         return new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
                 message
         );
     }
 
-    private static ResponseStatusException conflict(
-            String message
-    ) {
+    private static ResponseStatusException conflict(String message) {
         return new ResponseStatusException(
                 HttpStatus.CONFLICT,
                 message

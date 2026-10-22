@@ -4,6 +4,7 @@ import com.zipbob.zipbob_backend.dto.LikeResponseDto;
 import com.zipbob.zipbob_backend.service.LikeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,9 +27,9 @@ public class LikeController {
     @PutMapping("/{menuId}")
     public ResponseEntity<Void> addFavorite(
             @PathVariable("menuId") Integer menuId,
-            @RequestParam("userDeviceId") Integer userDeviceId
+            Authentication authentication
     ) {
-        likeService.addFavorite(userDeviceId, menuId);
+        likeService.addFavorite(authentication.getName(), menuId);
 
         return ResponseEntity.noContent().build();
     }
@@ -37,20 +38,20 @@ public class LikeController {
     @DeleteMapping("/{menuId}")
     public ResponseEntity<Void> removeFavorite(
             @PathVariable("menuId") Integer menuId,
-            @RequestParam("userDeviceId") Integer userDeviceId
+            Authentication authentication
     ) {
-        likeService.removeFavorite(userDeviceId, menuId);
+        likeService.removeFavorite(authentication.getName(), menuId);
 
         return ResponseEntity.noContent().build();
     }
 
-    // 기기별 즐겨찾기 목록 조회
+    // 겨찾기 목록 조회
     @GetMapping
     public ResponseEntity<List<LikeResponseDto>> getFavorites(
-            @RequestParam("userDeviceId") Integer userDeviceId
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(
-                likeService.getFavorites(userDeviceId)
-        );
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-store")
+                .body(likeService.getFavorites(authentication.getName()));
     }
 }

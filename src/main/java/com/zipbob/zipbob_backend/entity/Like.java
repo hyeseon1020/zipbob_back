@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Like {
 
-    // 사용자 기기 ID + 메뉴 ID를 기본 키로 사용
+    // 회원 ID + 메뉴 ID 복합키
     @EmbeddedId
     private LikeId id;
 
@@ -27,8 +27,8 @@ public class Like {
     @Column(name = "crated_dt", insertable = false, updatable = false)
     private LocalDateTime createdDt;
 
-    public Like(Integer userDeviceId, Integer menuId, String createdId) {
-        this.id = new LikeId(userDeviceId, menuId);
+    public Like(String userId, Integer menuId, String createdId) {
+        this.id = new LikeId(userId, menuId);
         this.createdId = createdId;
     }
 }
