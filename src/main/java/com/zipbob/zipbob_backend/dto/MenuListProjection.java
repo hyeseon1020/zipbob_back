@@ -8,6 +8,10 @@ public interface MenuListProjection {
     String getCategoryName();
     String getDescription();
     String getImageUrl();
+    String getDifficultyLvl();
+    String getDifficultyName();
+    Integer getCookTime();
+    Integer getCookMinute();
 }
 /*
 | SQL 결과 별칭 | 읽는 메서드 | 예시 |

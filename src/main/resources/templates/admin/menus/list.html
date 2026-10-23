@@ -1,21 +1,207 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
       th:replace="~{admin/fragments/layout :: layout('메뉴 관리', 'menus', ~{::content})}">
+
 <body>
 
 <section class="card" th:fragment="content">
+
     <div class="card-heading">
-        <h2>메뉴 목록</h2>
-        <span class="status-badge">준비 중</span>
-    </div>
-
-    <div class="empty-state">
-        <p>메뉴 목록을 준비하고 있어요.</p>
-
-        <a th:href="@{/admin/menus/form}" class="btn btn-outline">
+        <a th:href="@{/admin/menus/form}"
+           class="btn btn-primary">
             메뉴 등록 화면
         </a>
     </div>
+
+    <!-- 메뉴명 검색 -->
+    <form th:action="@{/admin/menus}"
+          method="get"
+          class="menu-search-form">
+
+        <!-- 검색할 때 현재 선택한 카테고리 유지 -->
+        <input type="hidden"
+               name="category"
+               th:value="${category}">
+
+        <!-- 검색 조건이 바뀌면 1페이지부터 조회 -->
+        <input type="hidden"
+               name="page"
+               value="1">
+
+        <div class="menu-search-field">
+            <label for="keyword" class="form-label"></label>
+
+            <input type="search"
+                   id="keyword"
+                   name="keyword"
+                   class="form-control"
+                   placeholder="메뉴명을 입력하세요"
+                   th:value="${keyword}">
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            검색
+        </button>
+
+        <a th:href="@{/admin/menus}"
+           class="btn btn-secondary">
+            초기화
+        </a>
+    </form>
+
+    <!-- 카테고리 -->
+    <nav class="menu-category-list" aria-label="메뉴 카테고리">
+
+        <!-- 전체 카테고리 -->
+        <a class="menu-category"
+           th:classappend="${category == ''} ? 'is-active' : ''"
+           th:attr="aria-current=${category == '' ? 'true' : null}"
+           th:href="@{/admin/menus(
+               keyword=${keyword},
+               category='',
+               page=1
+           )}">
+            전체
+        </a>
+
+        <!-- DB 공통코드 카테고리 -->
+        <a th:each="item : ${categories}"
+           class="menu-category"
+           th:classappend="${category == item.codeId} ? 'is-active' : ''"
+           th:attr="aria-current=${category == item.codeId ? 'true' : null}"
+           th:href="@{/admin/menus(
+               keyword=${keyword},
+               category=${item.codeId},
+               page=1
+           )}"
+           th:text="${item.codeName}">
+        </a>
+
+    </nav>
+
+    <!-- 검색 조건에 해당하는 전체 개수 -->
+    <p class="menu-result-count"
+       th:text="|조회 결과 ${menuPage.totalElements}개|">
+    </p>
+
+    <!-- 현재 페이지 메뉴 목록 -->
+    <div class="menu-table-wrap"
+         th:if="${not #lists.isEmpty(menus)}">
+
+        <table class="menu-table">
+            <caption class="menu-table-caption"></caption>
+            <thead>
+            <tr>
+                <th scope="col">메뉴 ID</th>
+                <th scope="col">이미지</th>
+                <th scope="col">메뉴명</th>
+                <th scope="col">카테고리</th>
+                <th scope="col">난이도</th>
+                <th scope="col">조리시간</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="menu : ${menus}">
+                <td th:text="${menu.menuId}"></td>
+                <td>
+                    <img th:if="${not #strings.isEmpty(menu.imageUrl)}"
+                         th:src="@{${menu.imageUrl}}"
+                         th:alt="|${menu.menuName} 이미지|"
+                         class="menu-thumbnail"
+                         width="96"
+                         height="64"
+                         loading="lazy">
+
+                    <span th:if="${#strings.isEmpty(menu.imageUrl)}"
+                          class="menu-thumbnail-empty">
+                        이미지 없음
+                    </span>
+                </td>
+                <td class="menu-name"
+                    th:text="${menu.menuName}">
+                </td>
+                <td th:text="${menu.categoryName ?: '-'}"></td>
+                <!-- 조리시간 -->
+                <td class="menu-cook-duration">
+                    <span th:if="${menu.cookTime != null}"
+                          th:text="|${menu.cookTime}시간|">
+                    </span>
+                    <span th:if="${menu.cookMinute != null}"
+                          th:text="|${menu.cookMinute}분|">
+                    </span>
+                    <span th:if="${menu.cookTime == null
+                                  and menu.cookMinute == null}">
+                    </span>
+                </td>
+                <td class="menu-description"
+                    th:text="${menu.description ?: '-'}">
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 결과 없음 -->
+    <div class="empty-state"
+         th:if="${#lists.isEmpty(menus)}">
+        <p>조회된 메뉴가 없습니다. 검색어나 카테고리를 변경해보세요.</p>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <nav class="menu-pagination"
+         aria-label="메뉴 목록 페이지"
+         th:if="${menuPage.totalPages > 0}">
+
+        <!-- 이전 페이지 -->
+        <a class="menu-page-link"
+           th:if="${currentPage > 1}"
+           th:href="@{/admin/menus(
+               keyword=${keyword},
+               category=${category},
+               page=${currentPage - 1}
+           )}">
+            이전
+        </a>
+
+        <span class="menu-page-link is-disabled"
+              th:if="${currentPage == 1}"
+              aria-disabled="true">
+            이전
+        </span>
+
+        <!-- 페이지 번호 -->
+        <a th:each="number : ${#numbers.sequence(startPage, endPage)}"
+           class="menu-page-link"
+           th:classappend="${number == currentPage} ? 'is-active' : ''"
+           th:attr="aria-current=${number == currentPage ? 'page' : null}"
+           th:href="@{/admin/menus(
+               keyword=${keyword},
+               category=${category},
+               page=${number}
+           )}"
+           th:text="${number}">
+        </a>
+
+        <!-- 다음 페이지 -->
+        <a class="menu-page-link"
+           th:if="${currentPage < menuPage.totalPages}"
+           th:href="@{/admin/menus(
+               keyword=${keyword},
+               category=${category},
+               page=${currentPage + 1}
+           )}">
+            다음
+        </a>
+
+        <span class="menu-page-link is-disabled"
+              th:if="${currentPage >= menuPage.totalPages}"
+              aria-disabled="true">
+            다음
+        </span>
+
+    </nav>
 </section>
 
 </body>
