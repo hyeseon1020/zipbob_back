@@ -5,6 +5,8 @@ import com.zipbob.zipbob_backend.entity.Menu;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,35 +34,93 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
     */
     //
     @Query(value = """
-    SELECT
-        m.menu_id AS "menuId",
-        m.menu_name AS "menuName",
-        m.category AS "category",
-        -- m.category가 rice_bowl이면 함수가 공통코드 테이블에서 한글 이름을 찾아 반환
-        zipbob_app.codename_f(m.category) AS "categoryName",
-        m.description AS "description",
-        (
-        -- 대표 이미지 선택
-            SELECT f.file_path
-            FROM zipbob_app.file_mng f
-            WHERE f.menu_id = m.menu_id
-              AND f.use_yn = 'Y'
-            ORDER BY f.file_id ASC
-            LIMIT 1
-        ) AS "imageUrl"
-    FROM zipbob_app.menu_mng m
-    -- 카테고리 조건
-    WHERE (:category = '' OR m.category = :category)
-    -- 검색어 조건
-      AND (
-          :keyword = ''
-          OR LOWER(m.menu_name)
-             LIKE LOWER(CONCAT('%', :keyword, '%'))
-      )
-    ORDER BY m.menu_id ASC
-    """, nativeQuery = true)
+        SELECT
+            m.menu_id AS "menuId",
+            m.menu_name AS "menuName",
+            m.category AS "category",
+            -- m.category가 rice_bowl이면 함수가 공통코드 테이블에서 한글 이름을 찾아 반환
+            zipbob_app.codename_f(m.category) AS "categoryName",
+            m.description AS "description",
+            m.difficulty_lvl AS "difficultyLvl",
+            COALESCE(
+                NULLIF(zipbob_app.codename_f(m.difficulty_lvl), ''),
+                m.difficulty_lvl
+            ) AS "difficultyName",
+            m.cook_time AS "cookTime",
+            m.cook_minute AS "cookMinute",
+            (
+                -- 대표 이미지 선택
+                SELECT f.file_path
+                FROM zipbob_app.file_mng f
+                WHERE f.menu_id = m.menu_id
+                  AND f.use_yn = 'Y'
+                ORDER BY f.file_id ASC
+                LIMIT 1
+            ) AS "imageUrl"
+        FROM zipbob_app.menu_mng m
+        -- 카테고리 조건
+        WHERE (:category = '' OR m.category = :category)
+        -- 검색어 조건
+          AND (
+              :keyword = ''
+              OR LOWER(m.menu_name)
+                 LIKE LOWER(CONCAT('%', :keyword, '%'))
+          )
+        ORDER BY m.menu_id ASC
+        """, nativeQuery = true)
     List<MenuListProjection> searchMenus(
             @Param("keyword") String keyword,
             @Param("category") String category
+    );
+
+    // 관리자 메뉴 목록: 검색·카테고리·페이지네이션
+    @Query(
+            value = """
+                SELECT
+                    m.menu_id AS "menuId",
+                    m.menu_name AS "menuName",
+                    m.category AS "category",
+                    zipbob_app.codename_f(m.category) AS "categoryName",
+                    m.description AS "description",
+                    m.difficulty_lvl AS "difficultyLvl",
+                    COALESCE(
+                        NULLIF(zipbob_app.codename_f(m.difficulty_lvl), ''),
+                        m.difficulty_lvl
+                    ) AS "difficultyName",
+                    m.cook_time AS "cookTime",
+                    m.cook_minute AS "cookMinute",
+                    (
+                        SELECT f.file_path
+                        FROM zipbob_app.file_mng f
+                        WHERE f.menu_id = m.menu_id
+                          AND f.use_yn = 'Y'
+                        ORDER BY f.file_id ASC
+                        LIMIT 1
+                    ) AS "imageUrl"
+                FROM zipbob_app.menu_mng m
+                WHERE (:category = '' OR m.category = :category)
+                  AND (
+                      :keyword = ''
+                      OR LOWER(m.menu_name)
+                         LIKE LOWER(CONCAT('%', :keyword, '%'))
+                  )
+                ORDER BY m.menu_id ASC
+                """,
+            countQuery = """
+                SELECT COUNT(*)
+                FROM zipbob_app.menu_mng m
+                WHERE (:category = '' OR m.category = :category)
+                  AND (
+                      :keyword = ''
+                      OR LOWER(m.menu_name)
+                         LIKE LOWER(CONCAT('%', :keyword, '%'))
+                  )
+                """,
+            nativeQuery = true
+    )
+    Page<MenuListProjection> searchMenusPage(
+            @Param("keyword") String keyword,
+            @Param("category") String category,
+            Pageable pageable
     );
 }

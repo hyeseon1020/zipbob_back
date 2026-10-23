@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 // Spring이 관리하는 서비스 객체로 등록
@@ -48,5 +50,25 @@ public class MenuService {
                 .map(MenuListResponseDto::new)
                 // List 형태로 변환
                 .toList();
+    }
+
+    // 관리자 메뉴 목록: 한 페이지당 20개 조회
+    public Page<MenuListResponseDto> getMenusPage(
+            String keyword,
+            String category,
+            int page
+    ) {
+        String searchKeyword = keyword == null ? "" : keyword.trim();
+        String searchCategory = category == null ? "" : category.trim();
+
+        // 화면에서는 1페이지부터 사용
+        int currentPage = Math.max(page, 1);
+
+        // Spring Data JPA의 페이지 번호는 0부터 시작
+        PageRequest pageRequest = PageRequest.of(currentPage - 1, 20);
+
+        return menuRepository
+                .searchMenusPage(searchKeyword, searchCategory, pageRequest)
+                .map(MenuListResponseDto::new);
     }
 }

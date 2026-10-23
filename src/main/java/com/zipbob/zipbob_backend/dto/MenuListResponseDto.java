@@ -13,6 +13,10 @@ public class MenuListResponseDto {
     private final String categoryName;
     private final String description;
     private final String imageUrl;
+    private final String difficultyLvl;
+    private final String difficultyName;
+    private final Integer cookTime;
+    private final Integer cookMinute;
 
     // MenuListProjection에서 읽은 값을 그대로 DTO 필드에 저장
     public MenuListResponseDto(MenuListProjection menu) {
@@ -22,5 +26,9 @@ public class MenuListResponseDto {
         this.categoryName = menu.getCategoryName();
         this.description = menu.getDescription();
         this.imageUrl = menu.getImageUrl();
+        this.difficultyLvl = menu.getDifficultyLvl();
+        this.difficultyName = menu.getDifficultyName();
+        this.cookTime = menu.getCookTime();
+        this.cookMinute = menu.getCookMinute();
     }
 }

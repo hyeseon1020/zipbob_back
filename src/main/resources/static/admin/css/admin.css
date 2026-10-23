@@ -606,6 +606,242 @@ body.login-page {
 .login-card .btn {
     width: 100%;
 }
+/* 메뉴 목록·검색 */
+.menu-search-form {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+    padding: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-background);
+}
+
+.menu-search-field {
+    flex: 1 1 240px;
+    min-width: 0;
+}
+
+.menu-search-form .btn {
+    min-height: 48px;
+}
+
+/* 메뉴 카테고리 */
+.menu-category-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.menu-category {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 8px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: white;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    transition:
+        background-color .18s,
+        border-color .18s,
+        color .18s;
+}
+
+.menu-category:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+    color: var(--color-primary-hover);
+}
+
+.menu-category.is-active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+    color: var(--color-primary-hover);
+    font-weight: 700;
+}
+
+/* 메뉴 조회 결과 */
+.menu-result-count {
+    margin: 24px 0 14px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+
+/* 메뉴 목록 테이블 */
+.menu-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+}
+
+.menu-table {
+    width: 100%;
+    min-width: 1000px;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.menu-table-caption {
+    padding: 12px 16px;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    text-align: left;
+}
+
+.menu-table th,
+.menu-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+}
+
+.menu-table th {
+    background: var(--color-background);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.menu-table td {
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+.menu-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.menu-table tbody tr:hover {
+    background: #fff7f0;
+}
+
+/* 메뉴명·설명 */
+.menu-table .menu-name {
+    min-width: 150px;
+    font-weight: 700;
+}
+
+.menu-table .menu-description {
+    min-width: 240px;
+    color: var(--color-text-muted);
+}
+
+/* 메뉴 이미지 */
+.menu-thumbnail {
+    display: block;
+    width: 96px;
+    height: 64px;
+    max-width: none;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.menu-thumbnail-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    height: 64px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-background);
+    color: var(--color-text-muted);
+    font-size: 10px;
+}
+
+/* 메뉴 난이도·조리시간 */
+.menu-difficulty {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--color-primary-soft);
+    color: var(--color-primary-hover);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.menu-cook-duration {
+    white-space: nowrap;
+}
+
+.menu-cook-duration span + span {
+    margin-left: 4px;
+}
+
+/* 메뉴 페이지네이션 */
+.menu-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 28px;
+}
+
+.menu-page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: white;
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+
+a.menu-page-link:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+    color: var(--color-primary-hover);
+}
+
+.menu-page-link.is-active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+    color: var(--color-primary-hover);
+    font-weight: 700;
+}
+
+.menu-page-link.is-disabled {
+    opacity: .4;
+}
+
+.menu-page-summary {
+    margin-top: 12px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 11px;
+}
+
+/* 메뉴 목록 반응형 */
+@media (max-width: 760px) {
+    .menu-search-form {
+        padding: 16px;
+    }
+
+    .menu-search-field {
+        flex-basis: 100%;
+    }
+
+    .menu-search-form .btn {
+        flex: 1;
+    }
+
+    .menu-table th,
+    .menu-table td {
+        padding: 12px;
+    }
+}
 
 /* 반응형 */
 @media (max-width: 1100px) {
