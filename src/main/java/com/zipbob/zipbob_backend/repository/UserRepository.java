@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 // 관리할 엔티티: User, PK 타입: String
@@ -106,4 +107,17 @@ public interface UserRepository extends JpaRepository<User, String> {
             @Param("encodedPassword") String encodedPassword,
             @Param("userName") String userName
     );
+
+
+    // 관리자 페이지 회원 목록 조회용 Native Query
+    @Query(value = """
+        SELECT 
+            u.user_id AS userId,
+            u.login_id AS loginId,
+            u.nickname AS nickname,
+            u.email AS email
+        FROM zipbob_app.user_mng u
+        ORDER BY u.user_id DESC
+    """, nativeQuery = true)
+    List<UserListProjection> findAllUsersForAdmin();
 }

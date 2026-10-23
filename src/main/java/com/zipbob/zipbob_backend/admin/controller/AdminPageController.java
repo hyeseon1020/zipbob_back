@@ -1,16 +1,23 @@
 package com.zipbob.zipbob_backend.admin.controller;
 
+import com.zipbob.zipbob_backend.admin.dto.UserResponseDto;
+import com.zipbob.zipbob_backend.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.security.Principal;
+import java.util.List;
 
 @Controller
 @RequestMapping("/admin")
+@RequiredArgsConstructor
 // 관리자 URL에 맞는 HTML 화면
 public class AdminPageController {
+    private final UserService userService;
 
     // 관리자 화면에서 공통으로 사용할 로그인 아이디
     @ModelAttribute("adminId")
@@ -49,7 +56,14 @@ public class AdminPageController {
     }
     // 회원 목록
     @GetMapping("/users")
-    public String users() {
+    public String users(Model model) {
+        //회원 리스트 가져오기
+        List<UserResponseDto> userList = userService.getAllUsers();
+
+        // 모델에 담아서 타임리프 화면으로 전달
+        model.addAttribute("users", userList);
+
+        // templates/admin/users/list.html 반환
         return "admin/users/list";
     }
 }

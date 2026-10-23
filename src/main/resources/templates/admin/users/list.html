@@ -2,21 +2,45 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{admin/fragments/layout :: layout('회원 관리', 'users', ~{::content})}">
 <body>
-
 <section class="card" th:fragment="content">
     <div class="card-heading">
         <h2>회원 목록</h2>
-        <span class="status-badge">준비 중</span>
+        <span class="status-badge">운영 중</span>
     </div>
 
-    <div class="empty-state">
-        <p>회원 목록을 준비하고 있어요.</p>
+    <!-- 데이터가 없을 때 보여줄 화면 (기존 코드 활용) -->
+    <!-- <div class="empty-state" th:if="${#lists.isEmpty(users)}"> -->
+    <!--     <p>회원 목록을 준비하고 있어요.</p> -->
+    <!-- </div> -->
 
-        <a th:href="@{/admin/dashboard}" class="btn btn-outline">
-            대시보드로 이동
-        </a>
+    <!-- 데이터가 있을 때 보여줄 테이블 -->
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>아이디 ID</th>
+                <th>기기아이디</th>
+                <th>회원</th>
+                <th>이메일</th>
+                <th>role</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- th:each를 이용해 서버에서 넘어온 users 리스트 반복 출력 -->
+            <tr th:each="user : ${users}">
+                <td th:text="${user.userId}">1</td>
+                <td th:text="${user.userDevice}">testId</td>
+                <td th:text="${user.userName}">홍길동</td>
+                <td th:text="|${user.email}@${user.emailAdr}|">test@test.com</td>
+                <td th:text="${user.userRole}">회원</td>
+            </tr>
+            </tbody>
+        </table>
     </div>
+
+    <a th:href="@{/admin/dashboard}" class="btn btn-outline">
+        대시보드로 이동
+    </a>
 </section>
-
 </body>
 </html>

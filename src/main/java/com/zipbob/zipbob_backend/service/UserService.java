@@ -1,5 +1,6 @@
 package com.zipbob.zipbob_backend.service;
 
+import com.zipbob.zipbob_backend.admin.dto.UserResponseDto;
 import com.zipbob.zipbob_backend.dto.FindIdRequestDto;
 import com.zipbob.zipbob_backend.dto.ResetPasswordRequestDto;
 import com.zipbob.zipbob_backend.dto.UserLoginRequestDto;
@@ -20,8 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -404,5 +407,26 @@ public class UserService {
                 HttpStatus.UNAUTHORIZED,
                 "아이디 또는 비밀번호가 일치하지 않습니다."
         );
+    }
+
+    /*
+    * 관리자 페이지
+    * */
+    public List<UserResponseDto> getAllUsers() {
+        // DB에서 회원 목록을 조회하여 DTO로 변환 후 반환
+        return userRepository.findAll().stream()
+                .map(user -> {
+                    UserResponseDto dto = new UserResponseDto();
+                    dto.setUserId(user.getUserId());
+                    if (user.getUserDevice() != null) {
+                        dto.setUserDevice(user.getUserDevice().getUserDeviceId());
+                    }
+                    dto.setUserName(user.getUserName());
+                    dto.setEmail(user.getEmail());
+                    dto.setEmailAdr(user.getEmailAdr());
+                    dto.setUserRole(user.getUserRole());
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 }
