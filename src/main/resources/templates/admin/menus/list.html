@@ -8,9 +8,10 @@
 <section class="card" th:fragment="content">
 
     <div class="card-heading">
+        <h2>메뉴 목록</h2>
         <a th:href="@{/admin/menus/form}"
            class="btn btn-primary">
-            메뉴 등록 화면
+            신규 메뉴 등록
         </a>
     </div>
 
@@ -150,58 +151,7 @@
     </div>
 
     <!-- 페이지네이션 -->
-    <nav class="menu-pagination"
-         aria-label="메뉴 목록 페이지"
-         th:if="${menuPage.totalPages > 0}">
-
-        <!-- 이전 페이지 -->
-        <a class="menu-page-link"
-           th:if="${currentPage > 1}"
-           th:href="@{/admin/menus(
-               keyword=${keyword},
-               category=${category},
-               page=${currentPage - 1}
-           )}">
-            이전
-        </a>
-
-        <span class="menu-page-link is-disabled"
-              th:if="${currentPage == 1}"
-              aria-disabled="true">
-            이전
-        </span>
-
-        <!-- 페이지 번호 -->
-        <a th:each="number : ${#numbers.sequence(startPage, endPage)}"
-           class="menu-page-link"
-           th:classappend="${number == currentPage} ? 'is-active' : ''"
-           th:attr="aria-current=${number == currentPage ? 'page' : null}"
-           th:href="@{/admin/menus(
-               keyword=${keyword},
-               category=${category},
-               page=${number}
-           )}"
-           th:text="${number}">
-        </a>
-
-        <!-- 다음 페이지 -->
-        <a class="menu-page-link"
-           th:if="${currentPage < menuPage.totalPages}"
-           th:href="@{/admin/menus(
-               keyword=${keyword},
-               category=${category},
-               page=${currentPage + 1}
-           )}">
-            다음
-        </a>
-
-        <span class="menu-page-link is-disabled"
-              th:if="${currentPage >= menuPage.totalPages}"
-              aria-disabled="true">
-            다음
-        </span>
-
-    </nav>
+    <div th:replace="~{admin/fragments/pagination :: pagination(${pagination})}"></div>
 </section>
 
 </body>
