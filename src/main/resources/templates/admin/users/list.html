@@ -5,24 +5,89 @@
 <section class="card" th:fragment="content">
     <div class="card-heading">
         <h2>회원 목록</h2>
-        <span class="status-badge">운영 중</span>
     </div>
+
+    <!-- 회원 검색 -->
+    <form th:action="@{/admin/users}"
+          method="get"
+          class="menu-search-form">
+
+        <input type="hidden"
+               name="page"
+               value="1">
+
+        <div class="user-search-type">
+            <label for="searchType" class="form-label"></label>
+
+            <select id="searchType"
+                    name="searchType"
+                    class="form-control">
+                <option value="userId"
+                        th:selected="${searchType == 'userId'}">
+                    아이디
+                </option>
+
+                <option value="userName"
+                        th:selected="${searchType == 'userName'}">
+                    회원명
+                </option>
+
+                <option value="email"
+                        th:selected="${searchType == 'email'}">
+                    이메일
+                </option>
+            </select>
+        </div>
+
+        <div class="menu-search-field">
+            <label for="keyword" class="form-label"></label>
+
+            <input type="search"
+                   id="keyword"
+                   name="keyword"
+                   class="form-control"
+                   placeholder="검색어를 입력하세요"
+                   th:value="${keyword}">
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            검색
+        </button>
+
+        <a th:href="@{/admin/users}"
+           class="btn btn-secondary">
+            초기화
+        </a>
+    </form>
+
+    <p class="menu-result-count"
+       th:text="|조회 결과 ${pagination.totalElements}명|">
+    </p>
 
     <!-- 데이터가 없을 때 보여줄 화면 (기존 코드 활용) -->
     <!-- <div class="empty-state" th:if="${#lists.isEmpty(users)}"> -->
     <!--     <p>회원 목록을 준비하고 있어요.</p> -->
     <!-- </div> -->
 
+    <div class="empty-state"
+         th:if="${#lists.isEmpty(users)}">
+        <p th:text="${#strings.isEmpty(keyword)
+            ? '등록된 회원이 없습니다.'
+            : '검색 결과가 없습니다. 검색 조건을 변경해보세요.'}">
+        </p>
+    </div>
+
     <!-- 데이터가 있을 때 보여줄 테이블 -->
-    <div class="table-responsive">
-        <table class="table">
+    <div class="table-responsive menu-table-wrap user-table-wrap"
+         th:if="${not #lists.isEmpty(users)}">
+        <table class="table menu-table user-table">
             <thead>
             <tr>
                 <th>아이디 ID</th>
                 <th>기기아이디</th>
                 <th>회원</th>
                 <th>이메일</th>
-                <th>role</th>
+                <th>회원구분</th>
             </tr>
             </thead>
             <tbody>
@@ -38,9 +103,8 @@
         </table>
     </div>
 
-    <a th:href="@{/admin/dashboard}" class="btn btn-outline">
-        대시보드로 이동
-    </a>
+    <div th:replace="~{admin/fragments/pagination :: pagination(${pagination})}">
+    </div>
 </section>
 </body>
 </html>

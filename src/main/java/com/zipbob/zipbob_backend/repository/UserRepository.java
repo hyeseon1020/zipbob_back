@@ -3,6 +3,8 @@ package com.zipbob.zipbob_backend.repository;
 import com.zipbob.zipbob_backend.entity.User;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -120,4 +122,65 @@ public interface UserRepository extends JpaRepository<User, String> {
         ORDER BY u.user_id DESC
     """, nativeQuery = true)
     List<UserListProjection> findAllUsersForAdmin();
+
+    // 관리자 페이지 회원 목록 검색·페이지 조회
+    @Query(
+            value = """
+            SELECT u
+            FROM User u
+            WHERE (
+                :keyword = ''
+                OR (
+                    :searchType = 'userId'
+                    AND LOWER(u.userId)
+                        LIKE LOWER(CONCAT('%', :keyword, '%'))
+                )
+                OR (
+                    :searchType = 'userName'
+                    AND LOWER(u.userName)
+                        LIKE LOWER(CONCAT('%', :keyword, '%'))
+                )
+                OR (
+                    :searchType = 'email'
+                    AND LOWER(
+                        CONCAT(
+                            CONCAT(COALESCE(u.email, ''), '@'),
+                            COALESCE(u.emailAdr, '')
+                        )
+                    ) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                )
+            )
+            """,
+            countQuery = """
+            SELECT COUNT(u)
+            FROM User u
+            WHERE (
+                :keyword = ''
+                OR (
+                    :searchType = 'userId'
+                    AND LOWER(u.userId)
+                        LIKE LOWER(CONCAT('%', :keyword, '%'))
+                )
+                OR (
+                    :searchType = 'userName'
+                    AND LOWER(u.userName)
+                        LIKE LOWER(CONCAT('%', :keyword, '%'))
+                )
+                OR (
+                    :searchType = 'email'
+                    AND LOWER(
+                        CONCAT(
+                            CONCAT(COALESCE(u.email, ''), '@'),
+                            COALESCE(u.emailAdr, '')
+                        )
+                    ) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                )
+            )
+            """
+    )
+    Page<User> searchUsersForAdmin(
+            @Param("searchType") String searchType,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 }

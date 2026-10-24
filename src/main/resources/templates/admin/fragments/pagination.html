@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="pagination(paging)"
+     th:if="${paging.totalPages > 0}">
+
+    <nav class="menu-pagination"
+         aria-label="목록 페이지">
+
+        <!-- 이전 페이지 -->
+        <a class="menu-page-link"
+           th:if="${paging.currentPage > 1}"
+           th:href="${paging.link(paging.currentPage - 1)}">
+            이전
+        </a>
+
+        <span class="menu-page-link is-disabled"
+              th:if="${paging.currentPage == 1}"
+              aria-disabled="true">
+            이전
+        </span>
+
+        <!-- 페이지 번호 -->
+        <a th:each="number : ${#numbers.sequence(
+               paging.startPage,
+               paging.endPage
+           )}"
+           class="menu-page-link"
+           th:classappend="${number == paging.currentPage}
+               ? 'is-active' : ''"
+           th:attr="aria-current=${number == paging.currentPage
+               ? 'page' : null}"
+           th:href="${paging.link(number)}"
+           th:text="${number}">
+        </a>
+
+        <!-- 다음 페이지 -->
+        <a class="menu-page-link"
+           th:if="${paging.currentPage < paging.totalPages}"
+           th:href="${paging.link(paging.currentPage + 1)}">
+            다음
+        </a>
+
+        <span class="menu-page-link is-disabled"
+              th:if="${paging.currentPage >= paging.totalPages}"
+              aria-disabled="true">
+            다음
+        </span>
+
+    </nav>
+
+    <p class="menu-page-summary"
+       th:text="|${paging.currentPage} / ${paging.totalPages} 페이지 · 페이지당 ${paging.pageSize}개|">
+    </p>
+
+</div>
+
+</body>
+</html>

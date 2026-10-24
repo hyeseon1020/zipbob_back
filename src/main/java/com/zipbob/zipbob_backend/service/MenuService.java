@@ -1,5 +1,6 @@
 package com.zipbob.zipbob_backend.service;
 
+import com.zipbob.zipbob_backend.admin.common.AdminPagination;
 import com.zipbob.zipbob_backend.dto.MenuListResponseDto;
 import com.zipbob.zipbob_backend.dto.MenuResponseDto;
 import com.zipbob.zipbob_backend.entity.Menu;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+
 
 import java.util.List;
 // Spring이 관리하는 서비스 객체로 등록
@@ -65,7 +67,8 @@ public class MenuService {
         int currentPage = Math.max(page, 1);
 
         // Spring Data JPA의 페이지 번호는 0부터 시작
-        PageRequest pageRequest = PageRequest.of(currentPage - 1, 20);
+        PageRequest pageRequest =
+                AdminPagination.pageRequest(currentPage);
 
         return menuRepository
                 .searchMenusPage(searchKeyword, searchCategory, pageRequest)
