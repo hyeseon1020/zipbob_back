@@ -73,4 +73,11 @@ public class MenuFile {
 
         return file;
     }
+
+    // 이미지 교체 시 기존 이미지 비활성화
+    public void deactivate(String adminId) {
+        this.useYn = "N";
+        this.updatedId = adminId;
+        this.updatedDt = LocalDateTime.now();
+    }
 }

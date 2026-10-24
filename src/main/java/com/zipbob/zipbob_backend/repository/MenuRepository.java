@@ -1,8 +1,10 @@
 package com.zipbob.zipbob_backend.repository;
 
+import jakarta.persistence.LockModeType;
 import com.zipbob.zipbob_backend.dto.MenuListProjection;
 import com.zipbob.zipbob_backend.entity.Menu;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Page;
@@ -143,4 +145,16 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
         String getCodeId();
         String getCodeName();
     }
+
+    // 관리자 페이지_메뉴 수정용 조회
+    // 같은 메뉴를 수정하는 요청이 겹치면 순서대로 처리
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT m
+        FROM Menu m
+        WHERE m.menuId = :menuId
+        """)
+    Optional<Menu> findByIdForUpdate(
+            @Param("menuId") Integer menuId
+    );
 }
