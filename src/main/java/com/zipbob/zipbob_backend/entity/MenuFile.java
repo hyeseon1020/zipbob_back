@@ -51,4 +51,26 @@ public class MenuFile {
 
     @Column(name = "updated_dt")
     private LocalDateTime updatedDt;
+
+    // 메뉴 생성 메서드 (이미지 파일)
+    public static MenuFile create(
+            Menu menu,
+            String filePath,
+            Integer fileSize,
+            String fileSaveName,
+            String fileName,
+            String adminId
+    ) {
+        MenuFile file = new MenuFile();
+
+        file.menu = menu;
+        file.filePath = filePath;
+        file.fileSize = fileSize;
+        file.fileSaveName = fileSaveName;
+        file.fileName = fileName;
+        file.useYn = "Y";
+        file.createdId = adminId;
+
+        return file;
+    }
 }
