@@ -28,7 +28,9 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -36,8 +38,12 @@ import java.util.stream.Collectors;
 @Service
 public class AdminMenuService {
 
-    private static final long MAX_UPLOAD_SIZE = 10L * 1024 * 1024;
-    private static final long MAX_PIXELS = 12_000_000L;
+    private static final long MAX_UPLOAD_SIZE =
+            10L * 1024 * 1024;
+
+    private static final long MAX_PIXELS =
+            12_000_000L;
+
     private static final int MAX_DESCRIPTION_LENGTH = 100;
 
     private final MenuRepository menuRepository;
@@ -68,11 +74,27 @@ public class AdminMenuService {
     ) {
     }
 
-    // 등록 팝업에서 사용할 선택 목록
+    // 등록·수정 팝업에서 사용할 선택 목록
     public record FormOptions(
             List<Option> categories,
             List<Option> difficulties,
             List<Option> tags
+    ) {
+    }
+
+    // 수정 팝업에 표시할 기존 메뉴 정보
+    public record MenuEditDetail(
+            Integer menuId,
+            String menuName,
+            String category,
+            String description,
+            Integer servings,
+            Integer cookTime,
+            Integer cookMinute,
+            String ingredients,
+            String steps,
+            String difficultyLvl,
+            String imageUrl
     ) {
     }
 
@@ -106,20 +128,68 @@ public class AdminMenuService {
                 ))
                 .toList();
 
-        return new FormOptions(categories, difficulties, tags);
+        return new FormOptions(
+                categories,
+                difficulties,
+                tags
+        );
     }
 
-    // 신규 메뉴 등록
+    // 수정 팝업에 표시할 메뉴 상세 조회
+    @Transactional(readOnly = true)
+    public MenuEditDetail getDetail(Integer menuId) {
+        Menu menu = menuRepository.findByIdWithFiles(menuId)
+                .orElseThrow(() ->
+                        new NoSuchElementException(
+                                "메뉴를 찾을 수 없습니다."
+                        )
+                );
+
+        // 현재 사용 중인 이미지 중 첫 번째 이미지 선택
+        String imageUrl = menu.getFiles()
+                .stream()
+                .filter(file -> "Y".equals(file.getUseYn()))
+                .map(MenuFile::getFilePath)
+                .findFirst()
+                .orElse(null);
+
+        return new MenuEditDetail(
+                menu.getMenuId(),
+                menu.getMenuName(),
+                menu.getCategory(),
+                menu.getDescription(),
+                menu.getServings(),
+                menu.getCookTime(),
+                menu.getCookMinute(),
+                menu.getIngredients(),
+                menu.getSteps(),
+                menu.getDifficultyLvl(),
+                imageUrl
+        );
+    }
+
+    // 기존 메뉴 수정
     @Transactional
-    public Integer create(
+    public void update(
+            Integer menuId,
             MenuCreateRequestDto request,
             String adminId
     ) {
-        // 카테고리·난이도 유효성 검사
+        // 같은 메뉴의 수정 요청이 겹치면 순서대로 처리
+        Menu menu = menuRepository.findByIdForUpdate(menuId)
+                .orElseThrow(() ->
+                        new NoSuchElementException(
+                                "메뉴를 찾을 수 없습니다."
+                        )
+                );
+
+        // 카테고리·난이도 검사
         validateCodes(request);
 
-        // 음식 특징 검사 및 description 생성
-        String description = createDescription(request.getTagIds());
+        // 선택한 음식 특징 코드로 설명 문자열 생성
+        String description = createDescription(
+                request.getTagIds()
+        );
 
         if (request.getCookTime() == 0
                 && request.getCookMinute() == 0) {
@@ -128,10 +198,138 @@ public class AdminMenuService {
             );
         }
 
-        // 이미지 검사 및 실제 PNG 형식으로 변환
-        byte[] pngBytes = convertToPng(request.getImage());
+        MultipartFile image = request.getImage();
 
-        // 음식 특징 문자열을 description에 저장
+        // 새 이미지를 첨부했을 때만 이미지 교체
+        if (image != null && !image.isEmpty()) {
+            byte[] pngBytes = convertToPng(image);
+
+            // 기존 파일을 덮어쓰지 않도록 별도 이름 사용
+            String saveName = "menus_"
+                    + menuId
+                    + "_"
+                    + UUID.randomUUID()
+                    + ".png";
+
+            Path target = imageDirectory.resolve(saveName);
+
+            // 새 이미지 파일 저장
+            // DB 롤백 시 이 파일을 정리하는 작업도 등록됨
+            saveImage(target, pngBytes);
+
+            // 현재 사용 중인 기존 이미지 정보 조회
+            List<MenuFile> previous = menu.getFiles()
+                    .stream()
+                    .filter(file ->
+                            "Y".equals(file.getUseYn())
+                    )
+                    .toList();
+
+            // 기존 이미지 정보 비활성화
+            previous.forEach(file ->
+                    file.deactivate(adminId)
+            );
+
+            // 새 이미지 정보 등록
+            MenuFile newImage = MenuFile.create(
+                    menu,
+                    "/images/menus/" + saveName,
+                    pngBytes.length,
+                    saveName,
+                    originalFileName(image),
+                    adminId
+            );
+
+            menuFileRepository.saveAndFlush(newImage);
+
+            // DB 커밋이 완료된 뒤 기존 업로드 파일 정리
+            TransactionSynchronizationManager
+                    .registerSynchronization(
+                            new TransactionSynchronization() {
+                                @Override
+                                public void afterCommit() {
+                                    for (MenuFile file : previous) {
+                                        String name =
+                                                file.getFileSaveName();
+
+                                        // 해당 메뉴의 관리 대상 파일만 정리
+                                        if (name == null
+                                                || !name.matches(
+                                                "menus_"
+                                                        + menuId
+                                                        + "(?:_[0-9a-f-]{36})?\\.png"
+                                        )
+                                                || !(
+                                                "/images/menus/"
+                                                        + name
+                                        ).equals(
+                                                file.getFilePath()
+                                        )) {
+                                            continue;
+                                        }
+
+                                        try {
+                                            Files.deleteIfExists(
+                                                    imageDirectory.resolve(
+                                                            name
+                                                    )
+                                            );
+                                        } catch (IOException e) {
+                                            log.warn(
+                                                    "이전 메뉴 이미지 정리 실패: {}",
+                                                    name,
+                                                    e
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                    );
+        }
+
+        // 메뉴 텍스트 정보와 수정 이력 변경
+        menu.update(
+                request.getMenuName(),
+                request.getCategory(),
+                description,
+                request.getServings(),
+                request.getCookTime(),
+                request.getCookMinute(),
+                request.getIngredients(),
+                request.getSteps(),
+                request.getDifficultyLvl(),
+                adminId
+        );
+
+        // 변경 SQL을 DB에 반영
+        // 최종 커밋은 트랜잭션 완료 시 처리
+        menuRepository.flush();
+    }
+
+    // 신규 메뉴 등록
+    @Transactional
+    public Integer create(
+            MenuCreateRequestDto request,
+            String adminId
+    ) {
+        validateCodes(request);
+
+        String description = createDescription(
+                request.getTagIds()
+        );
+
+        if (request.getCookTime() == 0
+                && request.getCookMinute() == 0) {
+            throw new IllegalArgumentException(
+                    "조리 시간은 1분 이상 입력해주세요."
+            );
+        }
+
+        // 신규 등록에서는 이미지 필수
+        byte[] pngBytes = convertToPng(
+                request.getImage()
+        );
+
         Menu menu = Menu.create(
                 request.getMenuName(),
                 request.getCategory(),
@@ -145,17 +343,19 @@ public class AdminMenuService {
                 adminId
         );
 
-        // 메뉴 INSERT → DB에서 발급한 menu_id 확보
+        // 메뉴 INSERT 후 발급된 menu_id 확보
         menuRepository.saveAndFlush(menu);
 
-        String saveName = "menus_" + menu.getMenuId() + ".png";
-        String filePath = "/images/menus/" + saveName;
+        String saveName =
+                "menus_" + menu.getMenuId() + ".png";
+
+        String filePath =
+                "/images/menus/" + saveName;
+
         Path target = imageDirectory.resolve(saveName);
 
-        // 실제 이미지 파일 저장
         saveImage(target, pngBytes);
 
-        // file_mng에 이미지 정보 저장
         MenuFile menuFile = MenuFile.create(
                 menu,
                 filePath,
@@ -171,12 +371,17 @@ public class AdminMenuService {
     }
 
     // 카테고리·난이도 검사
-    private void validateCodes(MenuCreateRequestDto request) {
+    private void validateCodes(
+            MenuCreateRequestDto request
+    ) {
         FormOptions options = getFormOptions();
 
-        boolean validCategory = options.categories().stream()
+        boolean validCategory = options.categories()
+                .stream()
                 .anyMatch(option ->
-                        option.codeId().equals(request.getCategory())
+                        option.codeId().equals(
+                                request.getCategory()
+                        )
                 );
 
         if (!validCategory) {
@@ -185,9 +390,12 @@ public class AdminMenuService {
             );
         }
 
-        boolean validDifficulty = options.difficulties().stream()
+        boolean validDifficulty = options.difficulties()
+                .stream()
                 .anyMatch(option ->
-                        option.codeId().equals(request.getDifficultyLvl())
+                        option.codeId().equals(
+                                request.getDifficultyLvl()
+                        )
                 );
 
         if (!validDifficulty) {
@@ -197,16 +405,17 @@ public class AdminMenuService {
         }
     }
 
-    // 음식 특징 코드 → DB에 저장된 특징 이름으로 변환
-    private String createDescription(List<String> requestedTagIds) {
-        // 최소 1개 필수, 선택 개수 상한 없음
-        if (requestedTagIds == null || requestedTagIds.isEmpty()) {
+    // 음식 특징 코드 → 음식 특징 이름 문자열
+    private String createDescription(
+            List<String> requestedTagIds
+    ) {
+        if (requestedTagIds == null
+                || requestedTagIds.isEmpty()) {
             throw new IllegalArgumentException(
                     "음식 특징을 최소 1개 선택해주세요."
             );
         }
 
-        // 사용 중인 음식 특징만 조회
         Map<String, String> availableTags = codeRepository
                 .findByCodeParentAndUseYn("tag_code", "Y")
                 .stream()
@@ -215,11 +424,13 @@ public class AdminMenuService {
                         code -> code.getCodeName()
                 ));
 
-        // 중복 코드는 제거하고 전달받은 순서는 유지
-        Set<String> selectedTagIds = new LinkedHashSet<>();
+        // 중복 제거 및 전달받은 순서 유지
+        Set<String> selectedTagIds =
+                new LinkedHashSet<>();
 
         for (String tagId : requestedTagIds) {
-            if (tagId == null || !availableTags.containsKey(tagId)) {
+            if (tagId == null
+                    || !availableTags.containsKey(tagId)) {
                 throw new IllegalArgumentException(
                         "사용할 수 없는 음식 특징이 포함되어 있습니다."
                 );
@@ -228,16 +439,15 @@ public class AdminMenuService {
             selectedTagIds.add(tagId);
         }
 
-        // 예: mild, egg_tofu → "순한맛, 달걀·두부"
         String description = selectedTagIds.stream()
                 .map(availableTags::get)
                 .collect(Collectors.joining(", "));
 
-        // DB의 description VARCHAR(100)에 맞춰 문자 수 검사
-        int descriptionLength = description.codePointCount(
-                0,
-                description.length()
-        );
+        int descriptionLength =
+                description.codePointCount(
+                        0,
+                        description.length()
+                );
 
         if (descriptionLength > MAX_DESCRIPTION_LENGTH) {
             throw new IllegalArgumentException(
@@ -308,7 +518,8 @@ public class AdminMenuService {
                     );
                 }
 
-                BufferedImage bufferedImage = reader.read(0);
+                BufferedImage bufferedImage =
+                        reader.read(0);
 
                 if (bufferedImage == null) {
                     throw new IllegalArgumentException(
@@ -320,7 +531,13 @@ public class AdminMenuService {
                         ByteArrayOutputStream output =
                                 new ByteArrayOutputStream()
                 ) {
-                    if (!ImageIO.write(bufferedImage, "png", output)) {
+                    boolean converted = ImageIO.write(
+                            bufferedImage,
+                            "png",
+                            output
+                    );
+
+                    if (!converted) {
                         throw new IllegalStateException(
                                 "PNG 변환을 지원하지 않습니다."
                         );
@@ -344,42 +561,48 @@ public class AdminMenuService {
         }
     }
 
-    // 이미지 저장 및 DB 롤백 시 파일 정리
-    private void saveImage(Path target, byte[] bytes) {
-        AtomicBoolean created = new AtomicBoolean(false);
+    // 이미지 저장 및 DB 롤백 시 신규 파일 정리
+    private void saveImage(
+            Path target,
+            byte[] bytes
+    ) {
+        AtomicBoolean created =
+                new AtomicBoolean(false);
 
-        TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCompletion(int status) {
-                        if (status != STATUS_ROLLED_BACK
-                                || !created.get()) {
-                            return;
-                        }
+        TransactionSynchronizationManager
+                .registerSynchronization(
+                        new TransactionSynchronization() {
+                            @Override
+                            public void afterCompletion(int status) {
+                                if (status != STATUS_ROLLED_BACK
+                                        || !created.get()) {
+                                    return;
+                                }
 
-                        try {
-                            Files.deleteIfExists(target);
-                        } catch (IOException e) {
-                            log.error(
-                                    "메뉴 등록 롤백 후 이미지 삭제 실패: {}",
-                                    target,
-                                    e
-                            );
+                                try {
+                                    Files.deleteIfExists(target);
+                                } catch (IOException e) {
+                                    log.error(
+                                            "메뉴 저장 롤백 후 이미지 삭제 실패: {}",
+                                            target,
+                                            e
+                                    );
+                                }
+                            }
                         }
-                    }
-                }
-        );
+                );
 
         try {
             Files.createDirectories(imageDirectory);
 
-            // 기존 파일을 덮어쓰지 않고 새 파일 생성
+            // 같은 이름의 기존 파일을 덮어쓰지 않음
             try (
-                    OutputStream output = Files.newOutputStream(
-                            target,
-                            StandardOpenOption.CREATE_NEW,
-                            StandardOpenOption.WRITE
-                    )
+                    OutputStream output =
+                            Files.newOutputStream(
+                                    target,
+                                    StandardOpenOption.CREATE_NEW,
+                                    StandardOpenOption.WRITE
+                            )
             ) {
                 created.set(true);
                 output.write(bytes);
@@ -394,21 +617,31 @@ public class AdminMenuService {
     }
 
     // 원본 파일명 정리
-    private String originalFileName(MultipartFile image) {
+    private String originalFileName(
+            MultipartFile image
+    ) {
         String name = image.getOriginalFilename();
 
         if (name == null || name.isBlank()) {
             return "image";
         }
 
+        // 경로를 제외한 파일명만 사용
         name = name.replace('\\', '/');
-        name = name.substring(name.lastIndexOf('/') + 1);
+        name = name.substring(
+                name.lastIndexOf('/') + 1
+        );
+
+        // 제어 문자 제거
         name = name.replaceAll("\\p{Cntrl}", "");
 
         if (name.isBlank()) {
             return "image";
         }
 
-        return name.substring(0, Math.min(name.length(), 100));
+        return name.substring(
+                0,
+                Math.min(name.length(), 100)
+        );
     }
 }

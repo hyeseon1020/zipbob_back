@@ -92,7 +92,9 @@
          th:if="${not #lists.isEmpty(menus)}">
 
         <table class="menu-table">
-            <caption class="menu-table-caption"></caption>
+            <caption class="menu-table-caption">
+                메뉴 목록
+            </caption>
 
             <thead>
             <tr>
@@ -103,6 +105,7 @@
                 <th scope="col">카테고리</th>
                 <th scope="col">난이도</th>
                 <th scope="col">음식 특징</th>
+                <th scope="col">관리</th>
             </tr>
             </thead>
 
@@ -155,6 +158,16 @@
                     th:text="${menu.description ?: '-'}">
                 </td>
 
+                <!-- 메뉴별 수정 버튼 -->
+                <td>
+                    <button type="button"
+                            class="btn btn-secondary menu-edit-button"
+                            th:attr="data-menu-id=${menu.menuId},
+                                     aria-label=|${menu.menuName} 수정|">
+                        수정
+                    </button>
+                </td>
+
             </tr>
             </tbody>
         </table>
@@ -170,7 +183,7 @@
     <div th:replace="~{admin/fragments/pagination :: pagination(${pagination})}">
     </div>
 
-    <!-- 신규 메뉴 등록 팝업 -->
+    <!-- 메뉴 등록·수정 공용 팝업 -->
     <dialog id="menu-create-dialog"
             class="menu-create-dialog"
             aria-labelledby="menu-create-title">
@@ -193,6 +206,7 @@
                        data-csrf-header=${_csrf.headerName},
                        data-csrf-token=${_csrf.token}">
 
+            <!-- 메뉴명 -->
             <div class="menu-create-field">
                 <label for="create-menu-name">메뉴명</label>
 
@@ -203,7 +217,7 @@
                        required>
             </div>
 
-            <!-- description 텍스트 입력란 대신 음식 특징 선택 -->
+            <!-- 음식 특징 -->
             <fieldset class="menu-tag-fieldset"
                       aria-describedby="create-tag-help">
 
@@ -220,6 +234,7 @@
                 </div>
             </fieldset>
 
+            <!-- 카테고리 -->
             <div class="menu-create-field">
                 <label for="create-category">카테고리</label>
 
@@ -231,6 +246,7 @@
                 </select>
             </div>
 
+            <!-- 난이도 -->
             <div class="menu-create-field">
                 <label for="create-difficulty">난이도</label>
 
@@ -242,6 +258,7 @@
                 </select>
             </div>
 
+            <!-- 기준 인분 -->
             <div class="menu-create-field">
                 <label for="create-servings">기준 인분</label>
 
@@ -255,6 +272,7 @@
                        required>
             </div>
 
+            <!-- 조리 시간 -->
             <div class="menu-create-time">
                 <div class="menu-create-field">
                     <label for="create-cook-time">조리 시간</label>
@@ -283,6 +301,7 @@
                 </div>
             </div>
 
+            <!-- 재료 -->
             <div class="menu-create-field">
                 <label for="create-ingredients">재료</label>
 
@@ -299,6 +318,7 @@
                 </small>
             </div>
 
+            <!-- 조리 순서 -->
             <div class="menu-create-field">
                 <label for="create-steps">조리 순서</label>
 
@@ -311,6 +331,7 @@
                           required></textarea>
             </div>
 
+            <!-- 메뉴 이미지 -->
             <div class="menu-create-field">
                 <label for="create-image">메뉴 이미지</label>
 
@@ -323,25 +344,29 @@
 
                 <small class="menu-create-help">
                     JPG·PNG, 최대 10MB / 저장 시 PNG로 변환됩니다.
+                    수정 시 새 이미지를 선택하지 않으면 기존 이미지를 유지합니다.
                 </small>
 
                 <img id="create-image-preview"
                      class="menu-create-preview"
-                     alt="선택한 메뉴 이미지 미리보기"
+                     alt="메뉴 이미지 미리보기"
                      hidden>
             </div>
 
+            <!-- 조회·저장 상태 및 오류 메시지 -->
             <p id="menu-create-message"
                class="menu-create-message"
                role="status">
             </p>
 
+            <!-- 등록·수정 공용 저장 버튼 -->
             <button type="submit"
                     id="save-menu-create"
                     class="btn btn-primary"
                     disabled>
                 등록
             </button>
+
         </form>
     </dialog>
 

@@ -99,4 +99,30 @@ public class Menu {
 
         return menu;
     }
+
+    // 기존 메뉴 정보 수정 (최초 등록 정보는 유지하고 수정 관리자와 수정 시각 기록)
+    public void update(
+            String menuName,
+            String category,
+            String description,
+            Integer servings,
+            Integer cookTime,
+            Integer cookMinute,
+            String ingredients,
+            String steps,
+            String difficultyLvl,
+            String adminId
+    ) {
+        this.menuName = menuName.trim();
+        this.category = category;
+        this.description = description.trim();
+        this.servings = servings;
+        this.cookTime = cookTime;
+        this.cookMinute = cookMinute;
+        this.ingredients = ingredients.trim();
+        this.steps = steps.trim();
+        this.difficultyLvl = difficultyLvl;
+        this.updatedId = adminId;
+        this.updatedDt = LocalDateTime.now();
+    }
 }
