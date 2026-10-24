@@ -123,4 +123,24 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
             @Param("category") String category,
             Pageable pageable
     );
+
+    // 현재 메뉴에 사용 중인 난이도와 표시 이름
+    @Query(value = """
+    SELECT DISTINCT
+        m.difficulty_lvl AS "codeId",
+        COALESCE(
+            NULLIF(zipbob_app.codename_f(m.difficulty_lvl), ''),
+            m.difficulty_lvl
+        ) AS "codeName"
+    FROM zipbob_app.menu_mng m
+    WHERE m.difficulty_lvl IS NOT NULL
+      AND TRIM(m.difficulty_lvl) <> ''
+    ORDER BY "codeId"
+    """, nativeQuery = true)
+    List<DifficultyOption> findDifficultyOptions();
+
+    interface DifficultyOption {
+        String getCodeId();
+        String getCodeName();
+    }
 }

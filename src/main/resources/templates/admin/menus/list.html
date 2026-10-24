@@ -7,12 +7,17 @@
 
 <section class="card" th:fragment="content">
 
+    <link rel="stylesheet"
+          th:href="@{/admin/css/menu-create.css}">
+
     <div class="card-heading">
         <h2>메뉴 목록</h2>
-        <a th:href="@{/admin/menus/form}"
-           class="btn btn-primary">
+
+        <button type="button"
+                id="open-menu-create"
+                class="btn btn-primary">
             신규 메뉴 등록
-        </a>
+        </button>
     </div>
 
     <!-- 메뉴명 검색 -->
@@ -20,28 +25,26 @@
           method="get"
           class="menu-search-form">
 
-        <!-- 검색할 때 현재 선택한 카테고리 유지 -->
         <input type="hidden"
                name="category"
                th:value="${category}">
 
-        <!-- 검색 조건이 바뀌면 1페이지부터 조회 -->
         <input type="hidden"
                name="page"
                value="1">
 
         <div class="menu-search-field">
-            <label for="keyword" class="form-label"></label>
-
             <input type="search"
                    id="keyword"
                    name="keyword"
                    class="form-control"
                    placeholder="메뉴명을 입력하세요"
-                   th:value="${keyword}">
+                   th:value="${keyword}"
+                   aria-label="메뉴명 검색">
         </div>
 
-        <button type="submit" class="btn btn-primary">
+        <button type="submit"
+                class="btn btn-primary">
             검색
         </button>
 
@@ -52,9 +55,9 @@
     </form>
 
     <!-- 카테고리 -->
-    <nav class="menu-category-list" aria-label="메뉴 카테고리">
+    <nav class="menu-category-list"
+         aria-label="메뉴 카테고리">
 
-        <!-- 전체 카테고리 -->
         <a class="menu-category"
            th:classappend="${category == ''} ? 'is-active' : ''"
            th:attr="aria-current=${category == '' ? 'true' : null}"
@@ -66,7 +69,6 @@
             전체
         </a>
 
-        <!-- DB 공통코드 카테고리 -->
         <a th:each="item : ${categories}"
            class="menu-category"
            th:classappend="${category == item.codeId} ? 'is-active' : ''"
@@ -78,34 +80,37 @@
            )}"
            th:text="${item.codeName}">
         </a>
-
     </nav>
 
-    <!-- 검색 조건에 해당하는 전체 개수 -->
+    <!-- 검색 결과 개수 -->
     <p class="menu-result-count"
        th:text="|조회 결과 ${menuPage.totalElements}개|">
     </p>
 
-    <!-- 현재 페이지 메뉴 목록 -->
+    <!-- 메뉴 목록 -->
     <div class="menu-table-wrap"
          th:if="${not #lists.isEmpty(menus)}">
 
         <table class="menu-table">
             <caption class="menu-table-caption"></caption>
+
             <thead>
             <tr>
                 <th scope="col">메뉴 ID</th>
                 <th scope="col">이미지</th>
                 <th scope="col">메뉴명</th>
+                <th scope="col">조리시간</th>
                 <th scope="col">카테고리</th>
                 <th scope="col">난이도</th>
-                <th scope="col">조리시간</th>
+                <th scope="col">음식 특징</th>
             </tr>
             </thead>
 
             <tbody>
             <tr th:each="menu : ${menus}">
+
                 <td th:text="${menu.menuId}"></td>
+
                 <td>
                     <img th:if="${not #strings.isEmpty(menu.imageUrl)}"
                          th:src="@{${menu.imageUrl}}"
@@ -120,25 +125,36 @@
                         이미지 없음
                     </span>
                 </td>
+
                 <td class="menu-name"
                     th:text="${menu.menuName}">
                 </td>
-                <td th:text="${menu.categoryName ?: '-'}"></td>
-                <!-- 조리시간 -->
+
                 <td class="menu-cook-duration">
                     <span th:if="${menu.cookTime != null}"
                           th:text="|${menu.cookTime}시간|">
                     </span>
+
                     <span th:if="${menu.cookMinute != null}"
                           th:text="|${menu.cookMinute}분|">
                     </span>
+
                     <span th:if="${menu.cookTime == null
                                   and menu.cookMinute == null}">
+                        -
                     </span>
                 </td>
+
+                <td th:text="${menu.categoryName ?: '-'}"></td>
+
+                <td th:text="${menu.difficultyName ?: menu.difficultyLvl ?: '-'}">
+                </td>
+
+                <!-- description은 음식 특징 표시 문자열 -->
                 <td class="menu-description"
                     th:text="${menu.description ?: '-'}">
                 </td>
+
             </tr>
             </tbody>
         </table>
@@ -151,7 +167,186 @@
     </div>
 
     <!-- 페이지네이션 -->
-    <div th:replace="~{admin/fragments/pagination :: pagination(${pagination})}"></div>
+    <div th:replace="~{admin/fragments/pagination :: pagination(${pagination})}">
+    </div>
+
+    <!-- 신규 메뉴 등록 팝업 -->
+    <dialog id="menu-create-dialog"
+            class="menu-create-dialog"
+            aria-labelledby="menu-create-title">
+
+        <div class="menu-create-heading">
+            <h2 id="menu-create-title">신규 메뉴 등록</h2>
+
+            <button type="button"
+                    id="close-menu-create"
+                    class="btn btn-secondary">
+                닫기
+            </button>
+        </div>
+
+        <form id="menu-create-form"
+              class="menu-create-form"
+              th:attr="data-save-url=@{/api/admin/menus},
+                       data-options-url=@{/api/admin/menus/form-options},
+                       data-list-url=@{/admin/menus},
+                       data-csrf-header=${_csrf.headerName},
+                       data-csrf-token=${_csrf.token}">
+
+            <div class="menu-create-field">
+                <label for="create-menu-name">메뉴명</label>
+
+                <input id="create-menu-name"
+                       name="menuName"
+                       class="form-control"
+                       maxlength="50"
+                       required>
+            </div>
+
+            <!-- description 텍스트 입력란 대신 음식 특징 선택 -->
+            <fieldset class="menu-tag-fieldset"
+                      aria-describedby="create-tag-help">
+
+                <legend>음식 특징</legend>
+
+                <p id="create-tag-help"
+                   class="menu-tag-help">
+                    해당하는 특징을 최소 1개 선택해주세요.
+                    여러 개 선택할 수 있습니다.
+                </p>
+
+                <div id="create-tag-options"
+                     class="menu-tag-options">
+                </div>
+            </fieldset>
+
+            <div class="menu-create-field">
+                <label for="create-category">카테고리</label>
+
+                <select id="create-category"
+                        name="category"
+                        class="form-control"
+                        required>
+                    <option value="">선택해주세요</option>
+                </select>
+            </div>
+
+            <div class="menu-create-field">
+                <label for="create-difficulty">난이도</label>
+
+                <select id="create-difficulty"
+                        name="difficultyLvl"
+                        class="form-control"
+                        required>
+                    <option value="">선택해주세요</option>
+                </select>
+            </div>
+
+            <div class="menu-create-field">
+                <label for="create-servings">기준 인분</label>
+
+                <input type="number"
+                       id="create-servings"
+                       name="servings"
+                       class="form-control"
+                       min="1"
+                       max="100"
+                       value="1"
+                       required>
+            </div>
+
+            <div class="menu-create-time">
+                <div class="menu-create-field">
+                    <label for="create-cook-time">조리 시간</label>
+
+                    <input type="number"
+                           id="create-cook-time"
+                           name="cookTime"
+                           class="form-control"
+                           min="0"
+                           max="99"
+                           value="0"
+                           required>
+                </div>
+
+                <div class="menu-create-field">
+                    <label for="create-cook-minute">조리 분</label>
+
+                    <input type="number"
+                           id="create-cook-minute"
+                           name="cookMinute"
+                           class="form-control"
+                           min="0"
+                           max="59"
+                           value="10"
+                           required>
+                </div>
+            </div>
+
+            <div class="menu-create-field">
+                <label for="create-ingredients">재료</label>
+
+                <textarea id="create-ingredients"
+                          name="ingredients"
+                          class="form-control"
+                          rows="4"
+                          maxlength="20000"
+                          placeholder="밥 1공기, 계란 1개, 간장 1큰술"
+                          required></textarea>
+
+                <small class="menu-create-help">
+                    재료는 쉼표로 구분해서 입력해주세요.
+                </small>
+            </div>
+
+            <div class="menu-create-field">
+                <label for="create-steps">조리 순서</label>
+
+                <textarea id="create-steps"
+                          name="steps"
+                          class="form-control"
+                          rows="7"
+                          maxlength="50000"
+                          placeholder="1. 재료를 준비합니다.&#10;2. 순서대로 조리합니다."
+                          required></textarea>
+            </div>
+
+            <div class="menu-create-field">
+                <label for="create-image">메뉴 이미지</label>
+
+                <input type="file"
+                       id="create-image"
+                       name="image"
+                       class="form-control"
+                       accept="image/png,image/jpeg"
+                       required>
+
+                <small class="menu-create-help">
+                    JPG·PNG, 최대 10MB / 저장 시 PNG로 변환됩니다.
+                </small>
+
+                <img id="create-image-preview"
+                     class="menu-create-preview"
+                     alt="선택한 메뉴 이미지 미리보기"
+                     hidden>
+            </div>
+
+            <p id="menu-create-message"
+               class="menu-create-message"
+               role="status">
+            </p>
+
+            <button type="submit"
+                    id="save-menu-create"
+                    class="btn btn-primary"
+                    disabled>
+                등록
+            </button>
+        </form>
+    </dialog>
+
+    <script th:src="@{/admin/js/menu-create.js}" defer></script>
+
 </section>
 
 </body>

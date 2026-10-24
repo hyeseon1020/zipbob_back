@@ -70,4 +70,33 @@ public class Menu {
     @OneToMany(mappedBy = "menu", fetch = FetchType.LAZY)
     @OrderBy("codeId ASC")
     private List<Tag> tags = new ArrayList<>();
+
+    // 메뉴 생성 메서드
+    public static Menu create(
+            String menuName,
+            String category,
+            String description,
+            Integer servings,
+            Integer cookTime,
+            Integer cookMinute,
+            String ingredients,
+            String steps,
+            String difficultyLvl,
+            String adminId
+    ) {
+        Menu menu = new Menu();
+
+        menu.menuName = menuName.trim();
+        menu.category = category;
+        menu.description = description.trim();
+        menu.servings = servings;
+        menu.cookTime = cookTime;
+        menu.cookMinute = cookMinute;
+        menu.ingredients = ingredients.trim();
+        menu.steps = steps.trim();
+        menu.difficultyLvl = difficultyLvl;
+        menu.createdId = adminId;
+
+        return menu;
+    }
 }
