@@ -1,0 +1,464 @@
+@charset "UTF-8";
+
+/*
+대시보드 공통
+ - 기존 admin.css의 색상·폰트·모서리 변수 사용
+ - 대시보드 내부 요소에만 스타일 적용
+ */
+.stats-dashboard {
+    margin-top: -12px;
+}
+
+.stats-intro {
+    margin-bottom: 22px;
+    color: var(--color-text-muted);
+}
+
+/* 상단 현황 카드 */
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.stats-metric,
+.stats-panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 16px rgba(85, 50, 26, 0.02);
+}
+
+.stats-metric {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-width: 0;
+    padding: 24px;
+}
+
+.stats-metric > div {
+    min-width: 0;
+}
+
+a.stats-metric {
+    transition: border-color 0.2s ease;
+}
+
+a.stats-metric:hover {
+    border-color: var(--color-primary);
+}
+
+.stats-metric h2 {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.stats-metric p {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+}
+
+.stats-metric strong {
+    color: var(--color-primary);
+    font-size: clamp(28px, 3vw, 38px);
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-metric small {
+    color: var(--color-text-muted);
+    font-size: 10px;
+}
+
+/* 현황 카드 아이콘 */
+.stats-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 58px;
+    width: 58px;
+    height: 58px;
+    color: var(--color-primary-hover);
+    background: var(--color-primary-soft);
+    border-radius: 16px;
+}
+
+.stats-icon .icon {
+    width: 30px;
+    height: 30px;
+}
+
+/* 통계 상세 카드 배치 */
+.stats-panels {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 20px;
+}
+
+.stats-panel {
+    min-width: 0;
+    padding: 24px;
+}
+
+.stats-panel-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.stats-panel-heading h2 {
+    font-size: 18px;
+}
+
+.stats-panel-heading > span {
+    color: var(--color-text-muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* 카테고리·음식 태그 가로 막대그래프 */
+.stats-bars {
+    max-height: 268px;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    scrollbar-width: thin;
+}
+
+.stats-bars li {
+    display: grid;
+    grid-template-columns: minmax(70px, 100px) minmax(0, 1fr) 48px;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: 13px;
+}
+
+.stats-label {
+    overflow-wrap: anywhere;
+}
+
+.stats-track {
+    display: block;
+    height: 14px;
+    overflow: hidden;
+    background: #f7f3ef;
+    border-radius: 4px;
+}
+
+.stats-track > span {
+    display: block;
+    height: 100%;
+    background: var(--color-primary);
+    border-radius: inherit;
+}
+
+.stats-count {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 안내 문구와 빈 상태 */
+.stats-note,
+.stats-subtitle {
+    color: var(--color-text-muted);
+    font-size: 11px;
+}
+
+.stats-note {
+    margin-top: 16px;
+}
+
+.stats-subtitle {
+    margin-top: -12px;
+    margin-bottom: 14px;
+}
+
+.stats-empty {
+    padding: 44px 10px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+    text-align: center;
+}
+
+/* 즐겨찾기 인기 메뉴 표 */
+.stats-table-wrap {
+    overflow-x: auto;
+}
+
+.stats-ranking {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.stats-ranking th {
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.stats-ranking th,
+.stats-ranking td {
+    padding: 9px 4px;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+}
+
+.stats-ranking th:first-child {
+    width: 48px;
+}
+
+.stats-ranking th:last-child,
+.stats-ranking td:last-child {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.stats-ranking tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+/* 인기 메뉴 이미지와 이름 */
+.stats-menu {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.stats-menu > span:last-child {
+    overflow-wrap: anywhere;
+}
+
+.stats-thumbnail {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: 0 0 52px;
+    width: 52px;
+    height: 38px;
+    overflow: hidden;
+    background: var(--color-primary-soft);
+    border-radius: 6px;
+}
+
+.stats-thumbnail img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.stats-thumbnail img[hidden] {
+    display: none;
+}
+
+/* 인기 메뉴 순위 배지  */
+.stats-rank {
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    color: var(--color-primary-hover);
+    background: var(--color-primary-soft);
+    border-radius: 50%;
+}
+
+.stats-rank-top {
+    color: #ffffff;
+    background: var(--color-primary);
+}
+
+/* 신규 회원 세로 막대그래프 */
+.stats-chart {
+    display: flex;
+    gap: 12px;
+    margin-top: 38px;
+}
+
+.stats-y-axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 20px;
+    height: 184px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    text-align: right;
+}
+
+.stats-columns {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    flex: 1;
+    gap: 12px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* 그래프 배경 눈금 */
+.stats-columns::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 184px;
+    border-bottom: 1px solid var(--color-border);
+    background: repeating-linear-gradient(
+        to top,
+        transparent 0,
+        transparent 45px,
+        var(--color-border) 45px,
+        var(--color-border) 46px
+    );
+    content: "";
+    pointer-events: none;
+}
+
+.stats-columns li {
+    position: relative;
+    min-width: 0;
+}
+
+/*
+날짜별 막대
+ - 고정 높이 영역의 아래쪽에 막대 정렬
+ - 막대가 0%여도 날짜와 가입자 수는 표시
+ */
+.stats-column-space {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    height: 184px;
+}
+
+.stats-column {
+    position: relative;
+    width: min(100%, 44px);
+    background: var(--color-primary);
+    border-radius: 5px 5px 0 0;
+}
+
+/* 막대 위 가입자 수  */
+.stats-column > span {
+    position: absolute;
+    bottom: calc(100% + 5px);
+    left: 50%;
+    font-size: 11px;
+    white-space: nowrap;
+    transform: translateX(-50%);
+}
+
+.stats-date {
+    display: block;
+    margin-top: 10px;
+    color: var(--color-text-muted);
+    font-size: 10px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* 스크린 리더 전용 설명 */
+.stats-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* 태블릿 및 좁은 데스크톱 화면 */
+@media (max-width: 1100px) {
+    .stats-metric {
+        gap: 12px;
+        padding: 18px;
+    }
+
+    .stats-icon {
+        flex-basis: 46px;
+        width: 46px;
+        height: 46px;
+    }
+
+    .stats-panels {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+/* 카테고리·태그 목록 스크롤바  */
+.stats-bars {
+    scrollbar-width: thin;
+    scrollbar-color: #f6bda3 #fff7f1;
+}
+
+.stats-bars::-webkit-scrollbar {
+    width: 6px;
+}
+
+.stats-bars::-webkit-scrollbar-track {
+    background: #fff7f1;
+    border-radius: 10px;
+}
+
+.stats-bars::-webkit-scrollbar-thumb {
+    background: #f6bda3;
+    border-radius: 10px;
+}
+
+.stats-bars::-webkit-scrollbar-thumb:hover {
+    background: #efa580;
+}
+
+/* 모바일 화면 */
+@media (max-width: 640px) {
+    .stats-summary {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+
+    .stats-metric {
+        padding: 18px 20px;
+    }
+
+    .stats-panel {
+        padding: 18px;
+    }
+
+    .stats-panel-heading h2 {
+        font-size: 16px;
+    }
+
+    .stats-bars li {
+        grid-template-columns: 72px minmax(0, 1fr) 44px;
+        gap: 8px;
+        font-size: 12px;
+    }
+
+    .stats-columns {
+        gap: 8px;
+    }
+
+    .stats-column > span {
+        font-size: 10px;
+    }
+
+    .stats-date {
+        font-size: 9px;
+    }
+}
