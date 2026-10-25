@@ -38,3 +38,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# 관리자 메뉴 업로드 이미지
+/images/menus/
