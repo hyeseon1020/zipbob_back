@@ -23,8 +23,8 @@ public interface MenuFilterRepository extends JpaRepository<Menu, Integer> {
             t.code_id AS codeId,
             zipbob_app.codename_f(t.code_id) AS tagName
         FROM zipbob_app.menu_mng m
-        LEFT OUTER JOIN zipbob_app.tag_mng t
-        ON m.menu_id = t.menu_id and t.use_yn = 'Y'
+        INNER JOIN zipbob_app.tag_mng t ON m.menu_id = t.menu_id and t.use_yn = 'Y'
+        INNER JOIN zipbob_app.code_mng c ON m.category = c.code_id AND c.use_yn = 'Y'
     """, nativeQuery = true)
     List<MenuTagListProjection> findAllWithCategoryName();
 
@@ -41,7 +41,8 @@ public interface MenuFilterRepository extends JpaRepository<Menu, Integer> {
             m.description AS description,
             f.file_path AS imageUrl
         FROM zipbob_app.menu_mng m
-        LEFT JOIN zipbob_app.tag_mng t ON m.menu_id = t.menu_id AND t.use_yn = 'Y'
+        INNER JOIN zipbob_app.tag_mng t ON m.menu_id = t.menu_id AND t.use_yn = 'Y'
+        INNER JOIN zipbob_app.code_mng c ON m.category = c.code_id AND c.use_yn = 'Y'
         LEFT JOIN file_mng f ON m.menu_id = f.menu_id AND f.use_yn = 'Y'
         WHERE (:category IS NULL OR :category = '' OR m.category = :category)
           AND (:hasTags = false OR t.code_id IN (:tags))
