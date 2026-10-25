@@ -3,6 +3,9 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- 관리자 API 요청에 사용할 CSRF 토큰 -->
+        <meta name="_csrf" th:content="${_csrf.token}">
+        <meta name="_csrf_header" th:content="${_csrf.headerName}">
         <title th:text="${pageTitle} + ' | 집밥PICK 관리자'">집밥PICK 관리자</title>
         <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
     </head>
