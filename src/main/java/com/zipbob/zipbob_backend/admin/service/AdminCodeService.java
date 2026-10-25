@@ -1,6 +1,7 @@
 package com.zipbob.zipbob_backend.admin.service;
 
 import com.zipbob.zipbob_backend.admin.dto.CodeSaveRequestDto;
+import com.zipbob.zipbob_backend.admin.repository.TagRepository;
 import com.zipbob.zipbob_backend.entity.Code;
 import com.zipbob.zipbob_backend.repository.CodeRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.List;
 public class AdminCodeService {
 
     private final CodeRepository codeRepository;
+    private final TagRepository tagRepository;
 
     // 카테고리 코드 목록 조회
     public List<Code> getCategoryCodes() {
@@ -27,7 +29,7 @@ public class AdminCodeService {
     }
 
     /**
-     * 공통코드 등록 및 수정 처리
+     * 공통코드 등록 및 수정 처리 (use_yn 동기화 포함)
      */
     @Transactional
     public void saveCode(CodeSaveRequestDto requestDto) {
@@ -40,6 +42,10 @@ public class AdminCodeService {
         code.setCodeName(requestDto.getCodeName());
         code.setUseYn(requestDto.getUseYn() != null ? requestDto.getUseYn() : "N");
 
+        // 1. 공통코드 저장 (수정 또는 등록)
         codeRepository.save(code);
+
+        // 2. tag 테이블에서도 동일한 code_id를 찾아 use_yn 상태 동기화 갱신
+        tagRepository.updateUseYnByCodeId(requestDto.getCodeId(), code.getUseYn());
     }
 }
