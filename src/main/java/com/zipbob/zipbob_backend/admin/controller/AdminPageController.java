@@ -1,7 +1,9 @@
 package com.zipbob.zipbob_backend.admin.controller;
 
 import com.zipbob.zipbob_backend.admin.common.AdminPagination;
+import com.zipbob.zipbob_backend.admin.dto.CodeSaveRequestDto;
 import com.zipbob.zipbob_backend.admin.dto.UserResponseDto;
+import com.zipbob.zipbob_backend.admin.service.AdminCodeService;
 import com.zipbob.zipbob_backend.admin.service.AdminDashboardService;
 import com.zipbob.zipbob_backend.dto.MenuListResponseDto;
 import com.zipbob.zipbob_backend.service.CodeService;
@@ -10,12 +12,11 @@ import com.zipbob.zipbob_backend.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
@@ -36,6 +37,7 @@ public class AdminPageController {
 
     private final MenuService menuService;
     private final CodeService codeService;
+    private final AdminCodeService adminCodeService;
     private final UserService userService;
     private final AdminDashboardService adminDashboardService;
 
@@ -113,10 +115,24 @@ public class AdminPageController {
         return "admin/menus/form";
     }
 
-    // 공통코드 목록
+    // 공통코드 목록 페이지
     @GetMapping("/codes")
-    public String codes() {
+    public String codes(Model model) {
+        model.addAttribute("categoryCodes", adminCodeService.getCategoryCodes());
+        model.addAttribute("tagCodes", adminCodeService.getTagCodes());
         return "admin/codes/list";
+    }
+
+    // 공통코드 등록/수정 API
+    @PostMapping("/api/codes/save")
+    @ResponseBody
+    public ResponseEntity<String> saveCode(@RequestBody CodeSaveRequestDto requestDto) {
+        try {
+            adminCodeService.saveCode(requestDto);
+            return ResponseEntity.ok("success");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("fail");
+        }
     }
 
     // 공통코드 등록
