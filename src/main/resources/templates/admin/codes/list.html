@@ -5,20 +5,22 @@
 
 <body>
 
-<section class="card" th:fragment="content">
-    <div class="card-heading">
-        <h2>공통코드 관리</h2>
-    </div>
+<section class="card code-management" th:fragment="content">
 
     <!-- 1. 카테고리 섹션 -->
-    <div class="code-section-header">
-        <h3>카테고리</h3>
-        <button type="button" class="btn btn-primary" id="open-category-create">
-            + 추가
+    <div class="card-heading">
+        <h2>카테고리</h2>
+        <button type="button"
+                class="btn btn-primary"
+                id="open-category-create">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+            추가
         </button>
     </div>
 
-    <div class="menu-table-wrap">
+    <div class="menu-table-wrap user-table-wrap">
         <table class="menu-table">
             <thead>
             <tr>
@@ -54,16 +56,20 @@
         </table>
     </div>
 
-
     <!-- 2. 음식 특징 섹션 -->
-    <div class="code-section-header" style="margin-top: 40px;">
-        <h3>음식 특징</h3>
-        <button type="button" class="btn btn-primary" id="open-tag-create">
-            + 추가
+    <div class="card-heading section-heading">
+        <h2>음식 특징</h2>
+        <button type="button"
+                class="btn btn-primary"
+                id="open-tag-create">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+            추가
         </button>
     </div>
 
-    <div class="menu-table-wrap">
+    <div class="menu-table-wrap user-table-wrap">
         <table class="menu-table">
             <thead>
             <tr>
@@ -99,53 +105,78 @@
         </table>
     </div>
 
-
     <!-- 공통코드 수정/등록 팝업 (Dialog) -->
-    <dialog id="code-edit-dialog" class="menu-create-dialog">
+    <dialog id="code-edit-dialog"
+            class="menu-create-dialog"
+            aria-labelledby="code-dialog-title">
+
         <div class="menu-create-heading">
             <h2 id="code-dialog-title">카테고리 수정</h2>
-            <button type="button" id="close-code-dialog" class="btn btn-secondary">닫기</button>
+            <button type="button"
+                    id="close-code-dialog"
+                    class="btn btn-secondary">
+                닫기
+            </button>
         </div>
 
         <form id="code-edit-form" class="menu-create-form">
             <div class="menu-create-field">
                 <label for="dialog-code-id">코드 ID</label>
-                <input id="dialog-code-id" name="codeId" class="form-control" readonly>
+                <input id="dialog-code-id"
+                       name="codeId"
+                       class="form-control"
+                       readonly>
             </div>
 
             <div class="menu-create-field">
                 <label for="dialog-code-parent">구분 (Parent)</label>
-                <input id="dialog-code-parent" name="codeParent" class="form-control" readonly>
+                <input id="dialog-code-parent"
+                       name="codeParent"
+                       class="form-control"
+                       readonly>
             </div>
 
             <div class="menu-create-field">
                 <label for="dialog-code-name">코드 이름</label>
-                <input id="dialog-code-name" name="codeName" class="form-control" required>
+                <input id="dialog-code-name"
+                       name="codeName"
+                       class="form-control"
+                       required>
             </div>
 
             <div class="menu-create-field">
-                <label>사용 여부</label>
-                <div class="toggle-wrap">
-                    <input type="checkbox" id="dialog-use-yn" name="useYn" value="Y">
-                    <label for="dialog-use-yn" class="toggle-label">활성 / 비활성</label>
+                <label for="dialog-use-yn">사용 여부</label>
+                <div class="code-use-option">
+                    <input type="checkbox"
+                           id="dialog-use-yn"
+                           name="useYn"
+                           value="Y">
+                    <label for="dialog-use-yn">활성 / 비활성</label>
                 </div>
             </div>
 
-            <p class="menu-create-help" style="color: #d9534f; margin-top: 10px;">
+            <p class="form-notice">
                 ⚠️ 비활성화하면 해당 카테고리와 연결된 메뉴가 웹에서 숨겨집니다.
             </p>
 
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-                <button type="button" id="cancel-code-dialog" class="btn btn-secondary">취소</button>
-                <button type="submit" class="btn btn-primary">저장</button>
+            <div class="menu-create-time">
+                <button type="button"
+                        id="cancel-code-dialog"
+                        class="btn btn-secondary">
+                    취소
+                </button>
+                <button type="submit"
+                        id="save-code-edit"
+                        class="btn btn-primary">
+                    저장
+                </button>
             </div>
         </form>
     </dialog>
 
+    <!-- 공통코드 관리용 자바스크립트 연결 -->
+    <script th:src="@{/admin/js/code-manage.js}" defer></script>
+
 </section>
-
-<!-- 공통코드 관리용 자바스크립트 연결 -->
-<script th:src="@{/admin/js/code-manage.js}" defer></script>
-
 </body>
 </html>

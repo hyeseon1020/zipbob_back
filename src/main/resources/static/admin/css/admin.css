@@ -684,7 +684,7 @@ body.login-page {
 
 
 /* 메뉴 목록 영역 */
-.card:has(.menu-search-form) {
+.card:is(:has(.menu-search-form), .code-management) {
     --menu-primary: #ef7544;
     --menu-primary-hover: #d95e30;
     --menu-background: #fffaf5;
@@ -697,14 +697,14 @@ body.login-page {
 }
 
 /* 목록 제목 */
-.card:has(.menu-search-form) > .card-heading h2 {
+.card:is(:has(.menu-search-form), .code-management) > .card-heading h2 {
     color: var(--menu-text);
     font-size: 20px;
     font-weight: 400;
 }
 
 /* 목록 상단·검색 버튼 */
-.card:has(.menu-search-form) > .card-heading .btn,
+.card:is(:has(.menu-search-form), .code-management) > .card-heading .btn,
 .menu-search-form .btn {
     display: inline-flex;
     align-items: center;
@@ -736,7 +736,7 @@ body.login-page {
         box-shadow 160ms ease;
 }
 
-.card:has(.menu-search-form) > .card-heading .btn:hover,
+.card:is(:has(.menu-search-form), .code-management) > .card-heading .btn:hover,
 .menu-search-form .btn:hover {
     border-color: var(--menu-primary-hover);
     background: var(--menu-primary-hover);
@@ -744,7 +744,7 @@ body.login-page {
     box-shadow: 0 6px 14px rgb(239 117 68 / 18%);
 }
 
-.card:has(.menu-search-form) > .card-heading .btn:focus-visible,
+.card:is(:has(.menu-search-form), .code-management) > .card-heading .btn:focus-visible,
 .menu-search-form .btn:focus-visible {
     outline: 2px solid var(--menu-primary-hover);
     outline-offset: 3px;
@@ -1267,7 +1267,7 @@ a.menu-page-link:hover {
 }
 
 /* 닫기 버튼 */
-.menu-create-heading #close-menu-create {
+.menu-create-heading :is(#close-menu-create, #close-code-dialog) {
     display: inline-flex;
     justify-content: center;
     align-items: center;
@@ -1293,7 +1293,7 @@ a.menu-page-link:hover {
         color 160ms ease;
 }
 
-.menu-create-heading #close-menu-create::before {
+.menu-create-heading :is(#close-menu-create, #close-code-dialog)::before {
     content: "";
     width: 13px;
     height: 13px;
@@ -1645,7 +1645,7 @@ a.menu-page-link:hover {
     display: none;
 }
 
-.menu-create-form #save-menu-create {
+.menu-create-form :is(#save-menu-create, #save-code-edit) {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1674,7 +1674,7 @@ a.menu-page-link:hover {
 }
 
 /* 등록 버튼 체크 아이콘 */
-.menu-create-form #save-menu-create::before {
+.menu-create-form :is(#save-menu-create, #save-code-edit)::before {
     content: "";
     flex: 0 0 19px;
     width: 19px;
@@ -1699,7 +1699,7 @@ a.menu-page-link:hover {
 
 /* 마우스 사용 환경 */
 @media (hover: hover) {
-    .menu-create-heading #close-menu-create:hover:not(:disabled) {
+    .menu-create-heading :is(#close-menu-create, #close-code-dialog):hover:not(:disabled) {
         border-color: #e6c3ac;
         background: var(--pick-soft);
         color: var(--pick-primary-dark);
@@ -1710,7 +1710,7 @@ a.menu-page-link:hover {
         background: #fff6ed;
     }
 
-    .menu-create-form #save-menu-create:hover:not(:disabled) {
+    .menu-create-form :is(#save-menu-create, #save-code-edit):hover:not(:disabled) {
         border-color: var(--pick-primary-dark);
         background: var(--pick-primary-dark);
         box-shadow: 0 8px 18px rgb(239 117 68 / 24%);
@@ -1948,4 +1948,47 @@ a.menu-page-link:hover {
     }
 }
 
+/* 공통코드 팝업: 라벨 아이콘 */
+#code-edit-dialog .menu-create-field > label {
+    --field-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16'/%3E%3C/svg%3E");
+}
+
+/* 구분: 메뉴 팝업 카테고리와 같은 아이콘 */
+#code-edit-dialog label[for="dialog-code-parent"] {
+    --field-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8'%3E%3Crect x='3' y='3' width='7' height='7' rx='2'/%3E%3Crect x='14' y='3' width='7' height='7' rx='2'/%3E%3Crect x='3' y='14' width='7' height='7' rx='2'/%3E%3Crect x='14' y='14' width='7' height='7' rx='2'/%3E%3C/svg%3E");
+}
+
+/* 체크박스와 문구 정렬 */
+#code-edit-dialog .code-use-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    color: var(--pick-muted);
+    font-size: 13px;
+}
+
+#code-edit-dialog #dialog-use-yn {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--pick-primary);
+}
+
+#code-edit-dialog .code-use-option label {
+    cursor: pointer;
+}
+
+/* 공통코드 관리: 두 표의 열 너비 통일 */
+.code-management .menu-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.code-management .menu-table th,
+.code-management .menu-table td {
+    width: 25%;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
 /* ==================== 관리자 CSS 끝 ==================== */
