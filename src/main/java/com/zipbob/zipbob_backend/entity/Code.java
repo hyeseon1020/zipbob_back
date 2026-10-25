@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -12,7 +13,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "code_mng", schema = "zipbob_app")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PACKAGE)
+@Setter
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
 public class Code {
 
     @Id

@@ -1,22 +1,151 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
       th:replace="~{admin/fragments/layout :: layout('공통코드 관리', 'codes', ~{::content})}">
+
 <body>
 
 <section class="card" th:fragment="content">
     <div class="card-heading">
-        <h2>공통코드 목록</h2>
-        <span class="status-badge">준비 중</span>
+        <h2>공통코드 관리</h2>
     </div>
 
-    <div class="empty-state">
-        <p>공통코드 목록을 준비하고 있어요.</p>
-
-        <a th:href="@{/admin/codes/form}" class="btn btn-outline">
-            공통코드 등록 화면
-        </a>
+    <!-- 1. 카테고리 섹션 -->
+    <div class="code-section-header">
+        <h3>카테고리</h3>
+        <button type="button" class="btn btn-primary" id="open-category-create">
+            + 추가
+        </button>
     </div>
+
+    <div class="menu-table-wrap">
+        <table class="menu-table">
+            <thead>
+            <tr>
+                <th scope="col">코드 ID</th>
+                <th scope="col">코드 이름</th>
+                <th scope="col">상태</th>
+                <th scope="col">관리</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- 카테고리 코드 리스트 반복 -->
+            <tr th:each="code : ${categoryCodes}">
+                <td th:text="${code.codeId}">rice_bowl</td>
+                <td th:text="${code.codeName}">덮밥·비빔밥</td>
+                <td>
+                    <span class="status-badge"
+                          th:classappend="${code.useYn == 'Y'} ? 'active' : 'inactive'"
+                          th:text="${code.useYn == 'Y' ? '활성' : '비활성'}">
+                    </span>
+                </td>
+                <td>
+                    <button type="button"
+                            class="btn btn-secondary code-edit-button"
+                            th:attr="data-code-id=${code.codeId},
+                                     data-code-name=${code.codeName},
+                                     data-code-parent=${code.codeParent},
+                                     data-use-yn=${code.useYn}">
+                        수정
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- 2. 음식 특징 섹션 -->
+    <div class="code-section-header" style="margin-top: 40px;">
+        <h3>음식 특징</h3>
+        <button type="button" class="btn btn-primary" id="open-tag-create">
+            + 추가
+        </button>
+    </div>
+
+    <div class="menu-table-wrap">
+        <table class="menu-table">
+            <thead>
+            <tr>
+                <th scope="col">코드 ID</th>
+                <th scope="col">이름</th>
+                <th scope="col">상태</th>
+                <th scope="col">관리</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- 음식 특징 코드 리스트 반복 -->
+            <tr th:each="code : ${tagCodes}">
+                <td th:text="${code.codeId}">spicy</td>
+                <td th:text="${code.codeName}">매운맛</td>
+                <td>
+                    <span class="status-badge"
+                          th:classappend="${code.useYn == 'Y'} ? 'active' : 'inactive'"
+                          th:text="${code.useYn == 'Y' ? '활성' : '비활성'}">
+                    </span>
+                </td>
+                <td>
+                    <button type="button"
+                            class="btn btn-secondary code-edit-button"
+                            th:attr="data-code-id=${code.codeId},
+                                     data-code-name=${code.codeName},
+                                     data-code-parent=${code.codeParent},
+                                     data-use-yn=${code.useYn}">
+                        수정
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- 공통코드 수정/등록 팝업 (Dialog) -->
+    <dialog id="code-edit-dialog" class="menu-create-dialog">
+        <div class="menu-create-heading">
+            <h2 id="code-dialog-title">카테고리 수정</h2>
+            <button type="button" id="close-code-dialog" class="btn btn-secondary">닫기</button>
+        </div>
+
+        <form id="code-edit-form" class="menu-create-form">
+            <div class="menu-create-field">
+                <label for="dialog-code-id">코드 ID</label>
+                <input id="dialog-code-id" name="codeId" class="form-control" readonly>
+            </div>
+
+            <div class="menu-create-field">
+                <label for="dialog-code-parent">구분 (Parent)</label>
+                <input id="dialog-code-parent" name="codeParent" class="form-control" readonly>
+            </div>
+
+            <div class="menu-create-field">
+                <label for="dialog-code-name">코드 이름</label>
+                <input id="dialog-code-name" name="codeName" class="form-control" required>
+            </div>
+
+            <div class="menu-create-field">
+                <label>사용 여부</label>
+                <div class="toggle-wrap">
+                    <input type="checkbox" id="dialog-use-yn" name="useYn" value="Y">
+                    <label for="dialog-use-yn" class="toggle-label">활성 / 비활성</label>
+                </div>
+            </div>
+
+            <p class="menu-create-help" style="color: #d9534f; margin-top: 10px;">
+                ⚠️ 비활성화하면 해당 카테고리와 연결된 메뉴가 웹에서 숨겨집니다.
+            </p>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" id="cancel-code-dialog" class="btn btn-secondary">취소</button>
+                <button type="submit" class="btn btn-primary">저장</button>
+            </div>
+        </form>
+    </dialog>
+
 </section>
+
+<!-- 공통코드 관리용 자바스크립트 연결 -->
+<script th:src="@{/admin/js/code-manage.js}" defer></script>
 
 </body>
 </html>
