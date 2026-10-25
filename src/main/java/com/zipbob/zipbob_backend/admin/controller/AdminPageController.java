@@ -2,6 +2,7 @@ package com.zipbob.zipbob_backend.admin.controller;
 
 import com.zipbob.zipbob_backend.admin.common.AdminPagination;
 import com.zipbob.zipbob_backend.admin.dto.UserResponseDto;
+import com.zipbob.zipbob_backend.admin.service.AdminDashboardService;
 import com.zipbob.zipbob_backend.dto.MenuListResponseDto;
 import com.zipbob.zipbob_backend.service.CodeService;
 import com.zipbob.zipbob_backend.service.MenuService;
@@ -23,12 +24,20 @@ import java.util.Map;
 @Controller
 @RequestMapping("/admin")
 @RequiredArgsConstructor
-// 관리자 URL에 맞는 HTML 화면
+/*
+관리자 화면 요청 처리
+ - 관리자 로그인 화면
+ - 대시보드 통계 조회
+ - 메뉴 목록·검색·페이지네이션
+ - 공통코드 화면
+ - 회원 목록·검색·페이지네이션
+ */
 public class AdminPageController {
 
     private final MenuService menuService;
     private final CodeService codeService;
     private final UserService userService;
+    private final AdminDashboardService adminDashboardService;
 
     // 관리자 화면에서 공통으로 사용할 로그인 아이디
     @ModelAttribute("adminId")
@@ -44,7 +53,13 @@ public class AdminPageController {
 
     // 대시보드
     @GetMapping({"", "/dashboard"})
-    public String dashboard() {
+    public String dashboard(Model model) {
+        // model : 화면에서 사용할 데이터를 담는 객체
+        model.addAttribute(
+                "dashboard",
+                adminDashboardService.getDashboard()
+        );
+
         return "admin/dashboard";
     }
 

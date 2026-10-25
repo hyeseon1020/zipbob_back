@@ -1,85 +1,304 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
       th:replace="~{admin/fragments/layout :: layout('대시보드', 'dashboard', ~{::content})}">
 <body>
 
-<section th:fragment="content">
-    <div class="welcome-card">
-        <div>
-            <span class="eyebrow">집밥PICK 운영 공간</span>
+<!--
+대시보드 본문
+ - 기존 관리자 공통 레이아웃 사용
+ - 컨트롤러에서 전달한 dashboard 데이터 표시
+-->
+<section th:fragment="content" class="stats-dashboard">
+    <link rel="stylesheet"
+          th:href="@{/admin/css/dashboard.css}">
 
-            <h2>오늘도 맛있는 선택을 도와주세요.</h2>
+    <p class="stats-intro">
+        메뉴와 회원 현황을 한눈에 확인하세요.
+    </p>
 
-            <p>메뉴부터 회원까지, 필요한 관리를 한곳에서 시작하세요.</p>
-        </div>
-
-        <span class="welcome-icon" aria-hidden="true">
-            <svg class="icon">
-                <use th:href="@{/admin/images/admin-icons.svg#bowl}"></use>
-            </svg>
-        </span>
-    </div>
-
-    <div class="section-heading">
-        <h2>빠른 이동</h2>
-        <p class="text-muted">관리할 항목을 선택해 주세요.</p>
-    </div>
-
-    <div class="dashboard-grid">
-        <a class="shortcut-card" th:href="@{/admin/menus}">
-            <span class="card-icon" aria-hidden="true">
+    <!--
+    상단 현황 카드
+     - 전체 메뉴 수
+     - 전체 일반 회원 수
+     - 최근 7일 신규 회원 수
+    -->
+    <div class="stats-summary">
+        <!-- 전체 메뉴 -->
+        <a class="stats-metric"
+           th:href="@{/admin/menus}">
+            <span class="stats-icon" aria-hidden="true">
                 <svg class="icon">
                     <use th:href="@{/admin/images/admin-icons.svg#bowl}"></use>
                 </svg>
             </span>
 
-            <h3>메뉴 관리</h3>
-            <p>집밥PICK의 메뉴와 레시피를 관리해요.</p>
-
-            <span class="card-link">
-                메뉴 관리로 이동
-                <svg class="icon" aria-hidden="true">
-                    <use th:href="@{/admin/images/admin-icons.svg#arrow}"></use>
-                </svg>
-            </span>
+            <div>
+                <h2>전체 메뉴</h2>
+                <p>
+                    <strong th:text="${dashboard.totalMenus}">0</strong>
+                    <span>개</span>
+                </p>
+            </div>
         </a>
 
-        <a class="shortcut-card" th:href="@{/admin/codes}">
-            <span class="card-icon" aria-hidden="true">
-                <svg class="icon">
-                    <use th:href="@{/admin/images/admin-icons.svg#codes}"></use>
-                </svg>
-            </span>
-
-            <h3>공통코드 관리</h3>
-            <p>카테고리와 분류 항목을 관리해요.</p>
-
-            <span class="card-link">
-                공통코드 관리로 이동
-                <svg class="icon" aria-hidden="true">
-                    <use th:href="@{/admin/images/admin-icons.svg#arrow}"></use>
-                </svg>
-            </span>
-        </a>
-
-        <a class="shortcut-card" th:href="@{/admin/users}">
-            <span class="card-icon" aria-hidden="true">
+        <!-- 전체 일반 회원 -->
+        <a class="stats-metric"
+           th:href="@{/admin/users}">
+            <span class="stats-icon" aria-hidden="true">
                 <svg class="icon">
                     <use th:href="@{/admin/images/admin-icons.svg#users}"></use>
                 </svg>
             </span>
 
-            <h3>회원 관리</h3>
-            <p>집밥PICK을 이용하는 회원을 관리해요.</p>
+            <div>
+                <h2>전체 회원</h2>
+                <p>
+                    <strong th:text="${dashboard.totalUsers}">0</strong>
+                    <span>명</span>
+                </p>
+                <small>관리자 계정 제외</small>
+            </div>
+        </a>
 
-            <span class="card-link">
-                회원 관리로 이동
-                <svg class="icon" aria-hidden="true">
-                    <use th:href="@{/admin/images/admin-icons.svg#arrow}"></use>
+        <!-- 최근 7일 신규 회원 -->
+        <div class="stats-metric">
+            <span class="stats-icon" aria-hidden="true">
+                <svg class="icon">
+                    <use th:href="@{/admin/images/admin-icons.svg#users}"></use>
                 </svg>
             </span>
-        </a>
+
+            <div>
+                <h2>최근 7일 신규 회원</h2>
+                <p>
+                    <strong th:text="${dashboard.newUsers}">0</strong>
+                    <span>명</span>
+                </p>
+                <small>오늘 포함 최근 7일 · 한국 시간 기준</small>
+            </div>
+        </div>
     </div>
+
+    <!--
+    통계 상세 영역
+     - 카테고리별 메뉴 수
+     - 음식 태그별 메뉴 수
+     - 즐겨찾기 인기 메뉴 TOP 5
+     - 최근 7일 신규 회원 그래프
+    -->
+    <div class="stats-panels">
+        <!--
+        카테고리별 메뉴 수
+         - 항목별 메뉴 수와 상대적인 막대 길이 표시
+         - 사용 중인 카테고리는 메뉴가 없어도 0개로 표시
+        -->
+        <section class="stats-panel"
+                 aria-labelledby="category-heading">
+            <div class="stats-panel-heading">
+                <h2 id="category-heading">카테고리별 메뉴 수</h2>
+                <span th:text="|총 ${dashboard.totalMenus}개|">
+                    총 0개
+                </span>
+            </div>
+
+            <p class="stats-empty"
+               th:if="${#lists.isEmpty(dashboard.categories)}">
+                등록된 카테고리가 없어요.
+            </p>
+
+            <ul class="stats-bars">
+                <li th:each="item : ${dashboard.categories}">
+                    <span class="stats-label"
+                          th:text="${item.name}"
+                          th:title="${item.name}">
+                        카테고리
+                    </span>
+
+                    <span class="stats-track" aria-hidden="true">
+                        <span th:style="|width: ${item.percent}%;|"></span>
+                    </span>
+
+                    <span class="stats-count"
+                          th:text="|${item.count}개|">
+                        0개
+                    </span>
+                </li>
+            </ul>
+        </section>
+
+        <!--
+        음식 태그별 메뉴 수
+         - 사용 중인 태그별 적용 메뉴 수 표시
+         - 메뉴 하나에 여러 태그를 적용할 수 있으므로 태그 간 중복 집계 가능
+        -->
+        <section class="stats-panel"
+                 aria-labelledby="tag-heading">
+            <div class="stats-panel-heading">
+                <h2 id="tag-heading">음식 태그별 메뉴 수</h2>
+            </div>
+
+            <p class="stats-empty"
+               th:if="${#lists.isEmpty(dashboard.tags)}">
+                사용 중인 음식 태그가 없어요.
+            </p>
+
+            <ul class="stats-bars">
+                <li th:each="item : ${dashboard.tags}">
+                    <span class="stats-label"
+                          th:text="${item.name}"
+                          th:title="${item.name}">
+                        태그
+                    </span>
+
+                    <span class="stats-track" aria-hidden="true">
+                        <span th:style="|width: ${item.percent}%;|"></span>
+                    </span>
+
+                    <span class="stats-count"
+                          th:text="|${item.count}개|">
+                        0개
+                    </span>
+                </li>
+            </ul>
+
+            <p class="stats-note">
+                메뉴 하나에 여러 태그가 적용될 수 있어요.
+            </p>
+        </section>
+
+        <!--
+        즐겨찾기 인기 메뉴
+         - 현재 일반 회원의 저장 수 기준
+         - 저장 수가 같으면 메뉴 ID 오름차순
+         - 최대 5개 표시
+        -->
+        <section class="stats-panel"
+                 aria-labelledby="popular-heading">
+            <div class="stats-panel-heading">
+                <h2 id="popular-heading">즐겨찾기 인기 메뉴 TOP 5</h2>
+            </div>
+
+            <p class="stats-subtitle">
+                현재 일반 회원의 저장 수 기준 · 동점 시 메뉴 ID 순
+            </p>
+
+            <p class="stats-empty"
+               th:if="${#lists.isEmpty(dashboard.popularMenus)}">
+                아직 즐겨찾기에 저장된 메뉴가 없어요.
+            </p>
+
+            <div class="stats-table-wrap"
+                 th:unless="${#lists.isEmpty(dashboard.popularMenus)}">
+                <table class="stats-ranking">
+                    <caption class="stats-sr-only">
+                        현재 즐겨찾기 저장 수가 많은 메뉴 순위
+                    </caption>
+
+                    <thead>
+                    <tr>
+                        <th scope="col">순위</th>
+                        <th scope="col">메뉴명</th>
+                        <th scope="col">저장 수</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="menu, state : ${dashboard.popularMenus}">
+                        <td>
+                                <span class="stats-rank"
+                                      th:classappend="${state.index < 3} ? 'stats-rank-top' : ''"
+                                      th:text="${state.count}">
+                                    1
+                                </span>
+                        </td>
+
+                        <td>
+                            <div class="stats-menu">
+                                    <span class="stats-thumbnail">
+                                        <span aria-hidden="true">🍚</span>
+                                        <img th:if="${menu.imageUrl != null and !#strings.isEmpty(menu.imageUrl)}"
+                                             th:src="${menu.imageUrl}"
+                                             alt=""
+                                             loading="lazy"
+                                             class="stats-food-image">
+                                    </span>
+
+                                <span th:text="${menu.menuName}">
+                                        메뉴명
+                                    </span>
+                            </div>
+                        </td>
+
+                        <td th:text="|${menu.favoriteCount}명|">
+                            0명
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!--
+        최근 7일 신규 회원 그래프
+         - 날짜별 가입자 수를 세로 막대로 표시
+         - 가입자가 없는 날짜도 0명으로 표시
+         - 그래프 합계와 상단 신규 회원 수가 일치
+        -->
+        <section class="stats-panel"
+                 aria-labelledby="signup-heading">
+            <div class="stats-panel-heading">
+                <h2 id="signup-heading">최근 7일 신규 회원</h2>
+                <span th:text="|총 ${dashboard.newUsers}명|">
+                    총 0명
+                </span>
+            </div>
+
+            <p class="stats-subtitle"
+               th:text="|${dashboard.dailySignups[0].date} ~ ${dashboard.dailySignups[6].date} · 한국 시간 기준|">
+                최근 7일
+            </p>
+
+            <div class="stats-chart">
+                <!-- Y축 최댓값과 최솟값 -->
+                <div class="stats-y-axis" aria-hidden="true">
+                    <span th:text="${dashboard.signupAxisMax}">4</span>
+                    <span>0</span>
+                </div>
+
+                <!-- 날짜별 막대와 가입자 수 -->
+                <ul class="stats-columns"
+                    aria-label="날짜별 신규 가입 회원 수">
+                    <li th:each="day : ${dashboard.dailySignups}">
+                        <div class="stats-column-space">
+                            <div class="stats-column"
+                                 th:style="|height: ${day.percent}%;|">
+                                <span th:text="|${day.count}명|">
+                                    0명
+                                </span>
+                            </div>
+                        </div>
+
+                        <span class="stats-date"
+                              th:text="${day.label}">
+                            10.25
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <p class="stats-note"
+               th:if="${dashboard.newUsers == 0}">
+                최근 7일 동안 가입한 회원이 없어요.
+            </p>
+        </section>
+    </div>
+
+    <!--
+    대시보드 전용 JavaScript
+     - 메뉴 이미지 로딩 실패 시 기본 아이콘 표시
+    -->
+    <script th:src="@{/admin/js/dashboard.js}" defer></script>
 </section>
 
 </body>
