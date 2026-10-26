@@ -29,16 +29,28 @@ public class AdminCodeService {
     }
 
     /**
-     * 공통코드 등록 및 수정 처리 (use_yn 동기화 포함)
+     * 공통코드 등록 및 수정 처리 (depth=1, create_id 자동 세팅, use_yn 동기화 포함)
      */
     @Transactional
-    public void saveCode(CodeSaveRequestDto requestDto) {
-        // 이미 존재하는 코드인지 확인 (ID 기준)
-        Code code = codeRepository.findById(requestDto.getCodeId()).orElse(new Code()); // 없으면 새로 생성
+    public void saveCode(CodeSaveRequestDto requestDto, String adminId) { // ★ 로그인한 관리자 ID 매개변수 추가
+        // 기존에 있는 코드인지 조회
+        Code code = codeRepository.findById(requestDto.getCodeId())
+                .orElse(null);
 
-        // 엔티티 구조에 맞춰 값 설정
-        code.setCodeId(requestDto.getCodeId());
-        code.setCodeParent(requestDto.getCodeParent());
+        boolean isNew = (code == null);
+
+        if (isNew) {
+            // 신규 등록일 경우 객체 생성
+            code = new Code();
+            code.setCodeId(requestDto.getCodeId());
+            code.setCodeParent(requestDto.getCodeParent());
+
+            // ★ 요구사항 반영: depth는 기본 1, createId는 로그인한 사람
+            code.setCodeDepth(1);          // 엔티티 필드명이 setDepth 또는 setDepthLvl 등인지 확인 필요
+            code.setCreatedId(adminId); // 엔티티 필드명이 setCreateId 인지 확인 필요
+        }
+
+        // 공통으로 변경 가능한 값 세팅
         code.setCodeName(requestDto.getCodeName());
         code.setUseYn(requestDto.getUseYn() != null ? requestDto.getUseYn() : "N");
 
