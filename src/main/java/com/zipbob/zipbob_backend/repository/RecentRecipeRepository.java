@@ -24,7 +24,7 @@ public interface RecentRecipeRepository
             String userId
     );
 
-    // 화면에 표시할 회원별 최근 조회 목록
+    // 회원별 최근 조회 목록: 활성 카테고리 메뉴 중 최신 5개
     @Query(value = """
         SELECT
             m.menu_id AS "menuId",
@@ -45,6 +45,13 @@ public interface RecentRecipeRepository
         INNER JOIN zipbob_app.menu_mng m
             ON m.menu_id = r.menu_id
         WHERE r.user_id = :userId
+          AND EXISTS (
+              SELECT 1
+              FROM zipbob_app.code_mng c
+              WHERE c.code_id = m.category
+                AND c.code_parent = 'category_code'
+                AND c.use_yn = 'Y'
+          )
         ORDER BY
             r.viewed_dt DESC,
             r.recent_recipe_id DESC

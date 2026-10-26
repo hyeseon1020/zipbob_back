@@ -12,7 +12,7 @@ import java.util.List;
 
 public interface LikeRepository extends JpaRepository<Like, LikeId> {
 
-    // 현재 회원의 즐겨찾기 목록
+    // 현재 회원의 즐겨찾기 목록: 활성 카테고리 메뉴만 조회
     @Query(value = """
         SELECT
             m.menu_id AS "menuId",
@@ -33,6 +33,13 @@ public interface LikeRepository extends JpaRepository<Like, LikeId> {
         INNER JOIN zipbob_app.menu_mng m
             ON m.menu_id = l.menu_id
         WHERE l.user_id = :userId
+          AND EXISTS (
+              SELECT 1
+              FROM zipbob_app.code_mng c
+              WHERE c.code_id = m.category
+                AND c.code_parent = 'category_code'
+                AND c.use_yn = 'Y'
+          )
         ORDER BY
             l.crated_dt DESC NULLS LAST,
             m.menu_id ASC
