@@ -125,11 +125,15 @@ public class AdminPageController {
     // 공통코드 등록/수정 API
     @PostMapping("/api/codes/save")
     @ResponseBody
-    public ResponseEntity<String> saveCode(@RequestBody CodeSaveRequestDto requestDto) {
+    public ResponseEntity<String> saveCode(@RequestBody CodeSaveRequestDto requestDto, Principal principal) {
         try {
-            adminCodeService.saveCode(requestDto);
+            // 현재 로그인한 관리자의 아이디 (로그인 안 되어 있으면 "admin" 혹은 기본값 처리 가능)
+            String adminId = (principal != null) ? principal.getName() : "system";
+
+            adminCodeService.saveCode(requestDto, adminId);
             return ResponseEntity.ok("success");
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("fail");
         }
     }
