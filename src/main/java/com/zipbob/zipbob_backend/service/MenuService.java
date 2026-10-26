@@ -27,13 +27,19 @@ public class MenuService {
 
     // 메뉴 레시피 조회 (메뉴 정보·이미지·인분·시간·난이도·재료·조리 순서)
     public MenuResponseDto getMenu(Integer menuId) {
-        Menu menu = menuRepository.findByIdWithFiles(menuId)
-                // 메뉴가 없으면
+        if (menuId == null || menuId <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "메뉴 ID는 양수여야 합니다."
+            );
+        }
+
+        Menu menu = menuRepository.findVisibleByIdWithFiles(menuId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "메뉴를 찾을 수 없습니다."
+                        "메뉴를 찾을 수 없거나 현재 공개되지 않은 메뉴입니다."
                 ));
-        // 메뉴가 있으면
+
         return new MenuResponseDto(menu);
     }
 

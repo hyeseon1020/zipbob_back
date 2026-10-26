@@ -89,7 +89,7 @@ public class AdminPageController {
         model.addAttribute("menus", menuPage.getContent());
         model.addAttribute("menuPage", menuPage);
 
-        model.addAttribute("categories", codeService.getCategoryCodes());
+        model.addAttribute("categories", adminCodeService.getCategoryCodes());
 
         model.addAttribute("keyword", searchKeyword);
         model.addAttribute("category", searchCategory);

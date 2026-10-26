@@ -26,6 +26,24 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
             @Param("menuId") Integer menuId
     );
 
+    // 앱 레시피 상세: 활성 카테고리에 속한 메뉴만 조회
+    @Query("""
+    SELECT DISTINCT m
+    FROM Menu m
+    LEFT JOIN FETCH m.files
+    WHERE m.menuId = :menuId
+      AND EXISTS (
+          SELECT 1
+          FROM Code c
+          WHERE c.codeId = m.category
+            AND c.codeParent = 'category_code'
+            AND c.useYn = 'Y'
+      )
+    """)
+    Optional<Menu> findVisibleByIdWithFiles(
+            @Param("menuId") Integer menuId
+    );
+
     /*
     전체 메뉴 (ID·메뉴명·카테고리·설명·이미지)
     이미지가 여러 개여도 메뉴마다 대표 이미지 한 개만 반환
@@ -59,9 +77,17 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
                 ORDER BY f.file_id ASC
                 LIMIT 1
             ) AS "imageUrl"
-        FROM zipbob_app.menu_mng m
-        -- 카테고리 조건
-        WHERE (:category = '' OR m.category = :category)
+            FROM zipbob_app.menu_mng m
+            -- 활성 카테고리에 속한 메뉴만 조회
+            WHERE EXISTS (
+                SELECT 1
+                FROM zipbob_app.code_mng c
+                WHERE c.code_id = m.category
+                  AND c.code_parent = 'category_code'
+                  AND c.use_yn = 'Y'
+            )
+            -- 카테고리 조건
+              AND (:category = '' OR m.category = :category)
         -- 검색어 조건
           AND (
               :keyword = ''
@@ -82,7 +108,14 @@ public interface MenuRepository extends JpaRepository<Menu, Integer> {
                     m.menu_id AS "menuId",
                     m.menu_name AS "menuName",
                     m.category AS "category",
-                    zipbob_app.codename_f(m.category) AS "categoryName",
+                    COALESCE(
+                        (
+                            SELECT c.code_name
+                            FROM zipbob_app.code_mng c
+                            WHERE c.code_id = m.category
+                        ),
+                        m.category
+                    ) AS "categoryName",
                     m.description AS "description",
                     m.difficulty_lvl AS "difficultyLvl",
                     COALESCE(
