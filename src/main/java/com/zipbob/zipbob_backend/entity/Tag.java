@@ -41,4 +41,20 @@ public class Tag {
 
     @Column(name = "updated_dt")
     private LocalDateTime updatedDt;
+
+    // 메뉴와 음식 특징 태그의 연결 생성
+    public static Tag create(
+            Menu menu,
+            String codeId,
+            String useYn,
+            String adminId
+    ){
+        Tag tag = new Tag();
+        tag.menu = menu;
+        tag.codeID = codeId;
+        tag.useYn = useYn;
+        tag.createdId = adminId;
+
+        return tag;
+    }
 }

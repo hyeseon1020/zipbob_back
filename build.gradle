@@ -49,3 +49,40 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// PostgreSQL 통합 테스트 코드를 별도로 관리
+sourceSets {
+    integrationTest {
+        java.srcDir 'src/integrationTest/java'
+        resources.srcDir 'src/integrationTest/resources'
+
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+// 기존 테스트 의존성을 통합 테스트에서도 사용
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+// 직접 지정했을 때만 실행하는 통합 테스트 작업
+tasks.register('integrationTest', Test) {
+    description = 'Runs PostgreSQL integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+
+    useJUnitPlatform()
+    shouldRunAfter tasks.named('test')
+
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        exceptionFormat = 'full'
+        showExceptions = true
+        showCauses = true
+        showStackTraces = true
+    }
+}
