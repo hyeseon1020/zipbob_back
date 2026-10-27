@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
-
+import java.util.List;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -49,18 +48,21 @@ public class AdminMenuService {
     private final MenuRepository menuRepository;
     private final MenuFileRepository menuFileRepository;
     private final CodeRepository codeRepository;
+    private final AdminMenuTagService adminMenuTagService;
     private final Path imageDirectory;
 
     public AdminMenuService(
             MenuRepository menuRepository,
             MenuFileRepository menuFileRepository,
             CodeRepository codeRepository,
+            AdminMenuTagService adminMenuTagService,
             @Value("${app.menu-image-dir:./images/menus}")
             String imageDirectory
     ) {
         this.menuRepository = menuRepository;
         this.menuFileRepository = menuFileRepository;
         this.codeRepository = codeRepository;
+        this.adminMenuTagService = adminMenuTagService;
 
         this.imageDirectory = Path.of(imageDirectory)
                 .toAbsolutePath()
@@ -94,7 +96,8 @@ public class AdminMenuService {
             String ingredients,
             String steps,
             String difficultyLvl,
-            String imageUrl
+            String imageUrl,
+            List<String> tagIds
     ) {
     }
 
@@ -102,7 +105,7 @@ public class AdminMenuService {
     @Transactional(readOnly = true)
     public FormOptions getFormOptions() {
         List<Option> categories = codeRepository
-                .findByCodeParentAndUseYn("category_code", "Y")
+                .findByCodeParent("category_code")
                 .stream()
                 .map(code -> new Option(
                         code.getCodeId(),
@@ -120,7 +123,7 @@ public class AdminMenuService {
                 .toList();
 
         List<Option> tags = codeRepository
-                .findByCodeParentAndUseYn("tag_code", "Y")
+                .findByCodeParent("tag_code")
                 .stream()
                 .map(code -> new Option(
                         code.getCodeId(),
@@ -153,6 +156,9 @@ public class AdminMenuService {
                 .findFirst()
                 .orElse(null);
 
+        // 해당 메뉴에 연결된 사용 중인 태그 코드 조회
+        List<String> tagIds = adminMenuTagService.getTagIds(menuId);
+
         return new MenuEditDetail(
                 menu.getMenuId(),
                 menu.getMenuName(),
@@ -164,7 +170,8 @@ public class AdminMenuService {
                 menu.getIngredients(),
                 menu.getSteps(),
                 menu.getDifficultyLvl(),
-                imageUrl
+                imageUrl,
+                tagIds
         );
     }
 
@@ -301,6 +308,13 @@ public class AdminMenuService {
                 adminId
         );
 
+        // 기존 태그 연결 삭제 후 현재 선택한 태그로 교체
+        adminMenuTagService.replace(
+                menu,
+                request.getTagIds(),
+                adminId
+        );
+
         // 변경 SQL을 DB에 반영
         // 최종 커밋은 트랜잭션 완료 시 처리
         menuRepository.flush();
@@ -345,6 +359,13 @@ public class AdminMenuService {
 
         // 메뉴 INSERT 후 발급된 menu_id 확보
         menuRepository.saveAndFlush(menu);
+
+        // 선택한 음식 특징을 tag_mng에 등록
+        adminMenuTagService.create(
+                menu,
+                request.getTagIds(),
+                adminId
+        );
 
         String saveName =
                 "menus_" + menu.getMenuId() + ".png";
@@ -417,7 +438,7 @@ public class AdminMenuService {
         }
 
         Map<String, String> availableTags = codeRepository
-                .findByCodeParentAndUseYn("tag_code", "Y")
+                .findByCodeParent("tag_code")
                 .stream()
                 .collect(Collectors.toMap(
                         code -> code.getCodeId(),

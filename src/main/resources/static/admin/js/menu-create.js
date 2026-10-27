@@ -271,61 +271,33 @@
                     field.value = value;
                 }
 
-                // description에 저장된 음식 특징 이름 분리
-                const storedNames = (
-                    detail.description || ''
-                )
-                    .split(',')
-                    .map(value => value.trim())
-                    .filter(Boolean);
+                // DB에 저장된 태그 ID로 기존 선택 복원
+                const storedTagIds = new Set(detail.tagIds || []);
+                const availableTagIds = new Set();
 
-                const availableNames = new Set();
-
-                // 저장된 이름과 일치하는 음식 특징 체크
                 for (
                     const checkbox of tagOptions.querySelectorAll(
                         'input[name="tagIds"]'
                     )
                 ) {
-                    availableNames.add(
-                        checkbox.dataset.tagName
-                    );
-
-                    checkbox.checked = storedNames.includes(
-                        checkbox.dataset.tagName
-                    );
+                    availableTagIds.add(checkbox.value);
+                    checkbox.checked = storedTagIds.has(checkbox.value);
                 }
 
-                // 현재 코드와 일치하지 않는 기존 특징 표시
-                const unmatchedNames = storedNames.filter(
-                    name => !availableNames.has(name)
+                // 현재 선택 목록에 없는 태그 연결 확인
+                const unavailableTagIds = [...storedTagIds].filter(
+                    tagId => !availableTagIds.has(tagId)
                 );
 
-                for (const name of unmatchedNames) {
-                    const label =
-                        document.createElement('label');
-
-                    label.className = 'menu-tag-item';
-
-                    const checkbox =
-                        document.createElement('input');
-
-                    checkbox.type = 'checkbox';
-                    checkbox.name = 'legacyTagNames';
-                    checkbox.checked = true;
-
-                    const text =
-                        document.createElement('span');
-
-                    text.textContent =
-                        `${name} (기존 값 · 해제 후 다시 선택)`;
-
-                    label.append(checkbox, text);
-                    tagOptions.append(label);
-
+                if (unavailableTagIds.length > 0) {
                     message.textContent =
-                        '현재 코드와 일치하지 않는 음식 특징이 있습니다. '
-                        + '기존 항목을 해제하고 다시 선택해주세요.';
+                        '현재 사용할 수 없는 음식 특징이 있습니다. '
+                        + '저장하면 해당 연결은 제거됩니다. '
+                        + '사용 가능한 음식 특징을 확인해주세요.';
+                } else if (storedTagIds.size === 0) {
+                    message.textContent =
+                        '저장된 음식 특징 연결이 없습니다. '
+                        + '음식 특징을 선택한 뒤 저장해주세요.';
                 }
 
                 existingImageUrl = detail.imageUrl;
@@ -421,19 +393,6 @@
 
         // required, min, max 등 HTML 입력 조건 검사
         if (!form.reportValidity()) {
-            return;
-        }
-
-        // 현재 코드와 일치하지 않는 기존 특징은 재선택 필요
-        if (
-            tagOptions.querySelector(
-                'input[name="legacyTagNames"]:checked'
-            )
-        ) {
-            message.textContent =
-                '현재 코드와 일치하지 않는 음식 특징을 '
-                + '해제하고 다시 선택해주세요.';
-
             return;
         }
 

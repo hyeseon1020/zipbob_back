@@ -131,16 +131,16 @@
                 </td>
 
                 <td class="menu-cook-duration">
-                    <span th:if="${menu.cookTime != null}"
+                    <span th:if="${menu.cookTime != null and menu.cookTime > 0}"
                           th:text="|${menu.cookTime}시간|">
                     </span>
 
-                    <span th:if="${menu.cookMinute != null}"
-                          th:text="|${menu.cookMinute}분|">
+                                    <span th:if="${menu.cookMinute != null and menu.cookMinute > 0}"
+                                          th:text="|${menu.cookMinute}분|">
                     </span>
 
-                    <span th:if="${menu.cookTime == null
-                                  and menu.cookMinute == null}">
+                                    <span th:if="${(menu.cookTime == null or menu.cookTime == 0)
+                                  and (menu.cookMinute == null or menu.cookMinute == 0)}">
                         -
                     </span>
                 </td>
