@@ -21,6 +21,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    # CI 실행마다 생성되는 테스트 전용 PostgreSQL
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: zipbob_test
+          POSTGRES_USER: zipbob_test
+          POSTGRES_PASSWORD: zipbob_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zipbob_test -d zipbob_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v6
@@ -37,9 +53,32 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
+      # 기존 기본 테스트와 빌드
       - name: Build and test
         run: ./gradlew clean build --no-daemon
 
+      # 컨테이너에 포함된 PostgreSQL 18 psql로 덤프 실행
+      - name: Initialize PostgreSQL schema
+        env:
+          POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+        run: |
+          docker exec -i "$POSTGRES_CONTAINER_ID" \
+            psql \
+              --username=zipbob_test \
+              --dbname=zipbob_test \
+              --no-psqlrc \
+              --set=ON_ERROR_STOP=1 \
+            < src/integrationTest/resources/db/schema.sql
+
+      # 실제 PostgreSQL을 사용하는 통합 테스트
+      - name: Run PostgreSQL integration tests
+        env:
+          INTEGRATION_DB_URL: jdbc:postgresql://localhost:5432/zipbob_test
+          INTEGRATION_DB_USERNAME: zipbob_test
+          INTEGRATION_DB_PASSWORD: zipbob_ci_password
+        run: ./gradlew integrationTest --no-daemon
+
+      # 실패했을 때도 테스트 결과 보관
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -48,5 +87,7 @@ jobs:
           path: |
             build/reports/tests/test/
             build/test-results/test/
+            build/reports/tests/integrationTest/
+            build/test-results/integrationTest/
           if-no-files-found: warn
           retention-days: 7
