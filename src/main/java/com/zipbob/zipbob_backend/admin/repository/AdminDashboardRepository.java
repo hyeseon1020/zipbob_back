@@ -118,33 +118,30 @@ public class AdminDashboardRepository {
      */
     @SuppressWarnings("unchecked")
     public List<Object[]> findTags() {
-
         return entityManager
                 .createNativeQuery("""
-                    SELECT
-                        c.code_id,
-                        c.code_name,
-                        COUNT(DISTINCT m.menu_id)
-                    FROM zipbob_app.code_mng c
+                SELECT
+                    c.code_id,
+                    c.code_name,
+                    COUNT(DISTINCT m.menu_id)
+                FROM zipbob_app.code_mng c
 
-                    LEFT JOIN zipbob_app.tag_mng t
-                        ON t.code_id = c.code_id
-                       AND t.use_yn = 'Y'
+                LEFT JOIN zipbob_app.tag_mng t
+                    ON t.code_id = c.code_id
 
-                    LEFT JOIN zipbob_app.menu_mng m
-                        ON m.menu_id = t.menu_id
+                LEFT JOIN zipbob_app.menu_mng m
+                    ON m.menu_id = t.menu_id
 
-                    WHERE c.code_parent = 'tag_code'
-                      AND c.use_yn = 'Y'
+                WHERE c.code_parent = 'tag_code'
 
-                    GROUP BY
-                        c.code_id,
-                        c.code_name
+                GROUP BY
+                    c.code_id,
+                    c.code_name
 
-                    ORDER BY
-                        3 DESC,
-                        c.code_id ASC
-                    """)
+                ORDER BY
+                    3 DESC,
+                    c.code_id ASC
+                """)
                 .getResultList();
     }
 
