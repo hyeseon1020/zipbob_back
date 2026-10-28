@@ -132,9 +132,12 @@ public class AdminPageController {
 
             adminCodeService.saveCode(requestDto, adminId);
             return ResponseEntity.ok("success");
+        } catch (IllegalArgumentException e) {
+            // 중복 등의 비즈니스 예외 메시지를 그대로 프론트에 전달
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("fail");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("서버 오류가 발생했습니다.");
         }
     }
 
