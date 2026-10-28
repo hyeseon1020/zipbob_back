@@ -18,11 +18,13 @@
     const saveBtn = form.querySelector('button[type="submit"]');
 
     let saving = false;
+    let currentMode = ""; //현재 모드를 저장할 변수 ("create" 또는 "update")
 
     // 1. 등록 팝업 열기
     function openCreateDialog(dialogTitle, codeParent) {
         form.reset();
 
+        currentMode = "create"; //등록 모드로 설정
         title.textContent = dialogTitle;
         codeIdInput.value = "";
         codeIdInput.readOnly = false;
@@ -49,6 +51,7 @@
         button.addEventListener("click", () => {
             form.reset();
 
+            currentMode = "update"; //수정 모드로 설정
             title.textContent = "공통코드 수정";
             codeIdInput.value = button.dataset.codeId;
             codeIdInput.readOnly = true;
@@ -88,9 +91,9 @@
             codeId: codeIdInput.value.trim(),
             codeParent: codeParentInput.value.trim(),
             codeName: codeNameInput.value.trim(),
-
             // 체크하면 Y, 체크를 해제하면 N
-            useYn: useYnInput.checked ? "Y" : "N"
+            useYn: useYnInput.checked ? "Y" : "N",
+            mode: currentMode // ★ 백엔드로 "create" 또는 "update" 전송
         };
 
         if (!requestData.codeId) {
@@ -161,8 +164,10 @@
             }
 
             if (!response.ok) {
+                // 서버에서 보낸 에러 메시지(중복 등)를 읽어서 에러로 던짐
+                const errorMessage = await response.text();
                 throw new Error(
-                    `저장에 실패했습니다. (HTTP ${response.status})`
+                    errorMessage || `저장에 실패했습니다. (HTTP ${response.status})`
                 );
             }
 
