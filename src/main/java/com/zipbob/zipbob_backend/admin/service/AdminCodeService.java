@@ -33,31 +33,36 @@ public class AdminCodeService {
      */
     @Transactional
     public void saveCode(CodeSaveRequestDto requestDto, String adminId) { // ★ 로그인한 관리자 ID 매개변수 추가
-        // 기존에 있는 코드인지 조회
-        Code code = codeRepository.findById(requestDto.getCodeId())
-                .orElse(null);
+        // ★ 프론트에서 넘어온 mode 값으로 명확하게 분기
+        if ("update".equals(requestDto.getMode())) {
+            // [수정 모드]
+            Code existingCode = codeRepository.findById(requestDto.getCodeId())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 코드입니다."));
 
-        boolean isNew = (code == null);
+            existingCode.setCodeName(requestDto.getCodeName());
+            existingCode.setUseYn(requestDto.getUseYn() != null ? requestDto.getUseYn() : "N");
+            //공통코드 저장 (수정)
+            codeRepository.save(existingCode);
 
-        if (isNew) {
-            // 신규 등록일 경우 객체 생성
-            code = new Code();
+        } else {
+            // [신규 등록 모드] 이미 존재하는 ID인지 체크
+            if (codeRepository.existsById(requestDto.getCodeId())) {
+                throw new IllegalArgumentException("이미 존재하는 코드 ID입니다.");
+            }
+
+            Code code = new Code();
             code.setCodeId(requestDto.getCodeId());
             code.setCodeParent(requestDto.getCodeParent());
 
-            // ★ 요구사항 반영: depth는 기본 1, createId는 로그인한 사람
-            code.setCodeDepth(1);          // 엔티티 필드명이 setDepth 또는 setDepthLvl 등인지 확인 필요
-            code.setCreatedId(adminId); // 엔티티 필드명이 setCreateId 인지 확인 필요
+            // depth는 기본 1, createId는 로그인한 사람
+            code.setCodeDepth(1);          // 기본 depth 1
+            code.setCreatedId(adminId);   // 로그인한 관리자 ID
+            code.setCodeName(requestDto.getCodeName());
+            code.setUseYn(requestDto.getUseYn() != null ? requestDto.getUseYn() : "N");
+            //공통코드 저장 (등록)
+            codeRepository.save(code);
         }
-
-        // 공통으로 변경 가능한 값 세팅
-        code.setCodeName(requestDto.getCodeName());
-        code.setUseYn(requestDto.getUseYn() != null ? requestDto.getUseYn() : "N");
-
-        // 1. 공통코드 저장 (수정 또는 등록)
-        codeRepository.save(code);
-
-        // 2. tag 테이블에서도 동일한 code_id를 찾아 use_yn 상태 동기화 갱신
-        tagRepository.updateUseYnByCodeId(requestDto.getCodeId(), code.getUseYn());
+        // 태그 테이블 use_yn 동기화
+        tagRepository.updateUseYnByCodeId(requestDto.getCodeId(), requestDto.getUseYn() != null ? requestDto.getUseYn() : "N");
     }
 }
