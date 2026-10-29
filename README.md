@@ -1,532 +1,252 @@
-# 집밥PICK Backend
+# 🍚 집밥PICK Backend
 
 > 고민은 짧게, 집밥은 맛있게.
 
-**집밥 메뉴 추천 앱의 메뉴·레시피·기기별 기록·회원 인증을 제공하는 Spring Boot REST API 서버입니다.**
+오늘 먹을 메뉴를 고르고 레시피를 확인하는 **집밥PICK**의 백엔드입니다. <Br>
+Flutter 앱에 메뉴 추천·회원 인증·즐겨찾기 API를 제공하고, Thymeleaf 관리자 화면에서 메뉴와 공통코드를 관리합니다.
 
-비회원도 메뉴를 탐색하고 즐겨찾기를 이용할 수 있도록 기기 기반 저장 기능을 구현했습니다. 회원 기능은 JWT 기반 인증을 사용하며, <br>
-이메일 인증을 회원가입·아이디 찾기·비밀번호 재설정에 공통으로 적용했습니다.
+**토큰 재사용 차단 · 회원별 데이터 접근 제어 · 반복 요청의 중복 저장 방지**를 중심으로 구현했습니다.<Br>
+주요 동작은 자동 테스트로 확인하고, PostgreSQL 쿼리는 실제 DB 환경에서 별도로 검증합니다.
 
-[Flutter 프론트엔드](https://github.com/WONDongin/zipbob_app) · [백엔드 저장소](https://github.com/hyeseon1020/zipbob_back) · [ERD](https://www.erdcloud.com/d/3aFinoeCdppLGQ8Na)
+[Flutter 앱](https://github.com/WONDongin/zipbob_app) · [ERD](https://www.erdcloud.com/d/3aFinoeCdppLGQ8Na) · [테스트 코드](src/test/java/com/zipbob/zipbob_backend) · [CI 실행 결과](https://github.com/hyeseon1020/zipbob_back/actions/workflows/backend-ci.yml)
 
-<br>
+[핵심 기능](#핵심-기능) · [서비스 구조](#서비스-구조) · [주요 설계](#주요-설계) · [테스트와 CI](#테스트와-ci) · [기술 스택](#기술-스택) · [로컬 실행](#로컬-실행)
 
-## 1. 프로젝트 개요
+<Br>
 
-| 항목 | 내용 |
+## 📌 핵심 기능
+
+### 앱 서비스
+- **비회원:** 메뉴 탐색·추천 이용
+- **로그인 회원:** 즐겨찾기·최근 기록 등 개인 기능 이용
+- **노출 정책:** 비활성 카테고리 메뉴는 앱 목록·상세·즐겨찾기·최근 기록 조회에서 제외
+
+| 기능 | 구현 내용 |
 | --- | --- |
-| 서비스 | 집밥 메뉴 추천 및 레시피 앱 |
-| 백엔드 역할 | 메뉴·추천 조회, 기기별 기록 관리, 회원·인증 처리 |
-| 언어 | Java 21 |
-| 프레임워크 | Spring Boot 4.1.1 |
-| 데이터 접근 | Spring Data JPA · JPQL · Native SQL · JdbcTemplate |
-| 데이터베이스 | PostgreSQL |
-| 인증 | Spring Security · JWT · BCrypt |
-| 빌드 | Gradle Wrapper |
-| 현재 상태 | 주요 API 구현 및 Flutter 연동, 로컬 개발 환경 기준 |
+| 메뉴 검색 | 메뉴명 검색과 카테고리 필터, 대표 이미지 조회 |
+| 조건 추천 | 카테고리와 음식 특징을 조합해 추천 후보 조회 |
+| 레시피 상세 | 재료·조리 순서·인분·조리 시간·난이도·이미지 제공 |
+| 즐겨찾기 | 로그인한 회원별 등록·해제·목록 조회, 같은 메뉴 중복 저장 방지 |
+| 최근 본 레시피 | 재조회 시 순서 갱신, 회원별 최신 5개 유지 |
+| 회원가입·계정 관리 | 이메일 인증 후 회원가입, 내 정보 조회·닉네임 수정, 아이디 찾기·비밀번호 재설정 |
+| 로그인 유지·로그아웃 | JWT 인증, Refresh Token 재발급·교체, 로그아웃한 토큰의 재사용 차단 |
 
-버전은 현재 저장소의 `build.gradle`을 기준으로 작성했습니다.
 
-<br>
+<Br>
 
-## 2. 주요 기능
+### 관리자 웹
+관리자 목록에서는 비활성 카테고리에 속한 메뉴도 조회할 수 있어, 앱 노출 여부와 콘텐츠 관리를 구분했습니다.
 
-| 영역 | 구현 내용 |
+| 기능 | 구현 내용 |
 | --- | --- |
-| 메뉴 목록 | 메뉴명 검색, 카테고리 필터, 대표 이미지 조회 |
-| 레시피 상세 | 메뉴·이미지·인분·조리 시간·난이도·재료·조리 순서 조회 |
-| 추천 | 카테고리와 음식 특징에 맞는 후보 목록 조회 |
-| 공통코드 | 카테고리·음식 특징 코드 조회 |
-| 기기 등록 | UUID·플랫폼 검증 및 서버 기기 ID 반환 |
-| 즐겨찾기 | 기기별 등록·해제·목록 조회 |
-| 최근 본 레시피 | 마지막 조회 시간 갱신, 최신 5개 유지 |
-| 회원가입 | 입력 검증, 중복 확인, 이메일 인증 검증, 비밀번호 해시 저장 |
-| 로그인 | 비밀번호 확인 후 액세스·리프레시 토큰 발급 |
-| 토큰 재발급 | 리프레시 토큰 검증·교체 |
-| 로그아웃 | 해당 리프레시 토큰 삭제 |
-| 내 정보 | 인증된 회원 정보 조회 |
-| 이메일 인증 | 인증번호 발송·확인, 목적별 인증 증명 발급·사용 |
-| 아이디 찾기 | 이메일 인증 후 가입 아이디 조회 |
-| 비밀번호 재설정 | 이메일 인증 후 비밀번호 변경 및 기존 리프레시 토큰 삭제 |
+| 운영 대시보드 | 메뉴·회원 현황, 최근 7일 가입 추이, 카테고리·음식 특징별 메뉴 수, 즐겨찾기 인기 메뉴 |
+| 메뉴 관리 | 메뉴 검색·카테고리 필터·페이지네이션, 레시피 등록·수정, 음식 특징 연결 관리 |
+| 이미지 관리 | JPG·PNG 업로드 검증, PNG 변환 및 외부 디렉터리 저장 |
+| 공통코드 관리 | 카테고리·음식 특징 등록·수정, 활성·비활성 상태 관리 |
+| 회원 조회 | 아이디·닉네임·이메일 검색과 페이지네이션 |
+| 관리자 인증 | 세션 로그인, ADMIN 권한 검사, 변경 요청 CSRF 보호 |
 
-추천 API는 **조건에 맞는 후보 목록**을 반환합니다. 후보 중 하나를 무작위로 선택하고 다시 추천하는 동작은 Flutter 앱에서 처리합니다.
+<Br>
 
-<br>
+## 📌 서비스 구조
 
-## 3. 시스템 구성
-
-| 구성 요소 | 역할 |
-| --- | --- |
-| Flutter 앱 | 사용자 입력, API 요청, 화면 표시, 클라이언트 토큰 관리 |
-| Spring Boot | REST API, 비즈니스 규칙, 인증·인가, 트랜잭션 처리 |
-| PostgreSQL | 메뉴·회원·기기별 기록·인증 데이터 저장 |
-| SMTP 서버 | 이메일 인증번호 전송 |
-
-### 요청 처리 구조
-
-| 계층 | 책임 |
-| --- | --- |
-| Controller | HTTP 요청·응답 처리 |
-| Service | 입력 검증, 비즈니스 로직, 트랜잭션 경계 |
-| Repository | JPA·JPQL·Native SQL을 통한 데이터 접근 |
-| Entity | 테이블 매핑과 상태 변경 |
-| DTO·Projection | 요청·응답 구조 및 조회 결과 정의 |
-| Security | JWT 검증, 인증 정보 등록, 접근 정책 |
-| Config | 비밀번호 인코더·CORS·Security 설정 |
-
-<br>
-
-## 4. 핵심 설계와 구현 이유
-
-### 4-1. 목록 조회와 상세 조회의 데이터 접근 분리
-
-**문제**
-
-목록 화면은 메뉴명·설명·카테고리·대표 이미지가 필요하지만, 상세 화면은 재료·조리 순서와 이미지 정보까지 필요합니다.
-
-**구현**
-
-- 목록은 필요한 컬럼만 조회하고 인터페이스 Projection으로 받습니다.
-- 조회 결과를 응답 DTO로 변환합니다.
-- 상세는 `LEFT JOIN FETCH`로 메뉴와 연결된 파일을 함께 조회합니다.
-- 목록의 대표 이미지는 사용 중인 파일 중 ID가 가장 작은 파일 한 개를 선택합니다.
-
-**선택 이유**
-
-화면별로 필요한 데이터 범위를 구분하고, 목록 조회에서 불필요한 엔티티 전체 로딩을 줄였습니다. 상세 조회는 파일 컬렉션을 함께 가져와 DTO 변환 시 별도 지연 조회를 피하도록 구성했습니다.
-
-### 4-2. 카테고리·음식 특징 기반 추천
-
-**구현**
-
-- 카테고리 조건과 음식 특징 조건을 함께 적용합니다.
-- 음식 특징을 여러 개 선택하면 선택한 특징 중 하나 이상에 해당하는 메뉴를 조회합니다.
-- 조건이 없으면 해당 조건의 필터링을 생략합니다.
-- 태그가 포함된 전체 목록은 메뉴 ID를 기준으로 그룹화해 응답합니다.
-
-예를 들어 카테고리가 `rice_bowl`, 특징이 `EASY`, `QUICK`이면 다음 조건으로 후보를 조회합니다.
-
-```text
-category = rice_bowl
-AND
-(tag = EASY OR tag = QUICK)
+앱 API와 관리자 웹은 같은 Spring Boot 서버에서 동작하며, 요청 경로에 따라 서로 다른 인증 설정을 적용합니다.<Br>
+공개 메뉴 조회와 로그인·재발급 등은 별도 접근 정책을 적용합니다. 위 도식은 인증이 필요한 요청의 처리 구조입니다.
+```mermaid
+flowchart TD
+    APP[Flutter 앱] --> API[앱 API]
+    WEB[관리자 브라우저] --> ADMIN[관리자 화면·API]
+    subgraph SERVER[Spring Boot]
+        API --> JWT[JWT 인증]
+        ADMIN --> SESSION[세션·ADMIN 권한·CSRF 검증]
+        JWT --> SERVICE[서비스·트랜잭션]
+        SESSION --> SERVICE
+    end
+    SERVICE --> DB[(PostgreSQL)]
+    SERVICE --> MAIL[SMTP 메일 발송]
 ```
 
-백엔드는 후보 조회를 담당하고, 앱은 후보 중 무작위 선택과 재추천 표시를 담당합니다.
+<Br>
 
-### 4-3. 비회원 사용을 위한 기기별 즐겨찾기
+## 📌 주요 설계
 
-**문제**
+### 1. Refresh Token 교체와 재사용 차단
 
-메뉴를 저장하기 위해 반드시 회원가입해야 한다면 서비스 진입 과정이 길어집니다.
+클라이언트에서 토큰을 지우는 것만으로는 서버에 남은 Refresh Token의 사용을 막을 수 없습니다. <Br>
+**서버에서 토큰의 유효 상태를 관리**하도록 구현했습니다.
 
-**구현**
+- **저장:** 토큰 원문 대신 SHA-256 해시를 DB에 저장합니다.
+- **재발급:** 대상 행을 잠근 뒤 기존 토큰 삭제와 새 토큰 발급을 하나의 트랜잭션으로 처리합니다.
+- **로그아웃:** 해당 Refresh Token을 삭제합니다.
+- **재사용 차단:** 교체되거나 로그아웃한 토큰의 재발급 요청은 `401`로 거절합니다.
 
-- 앱이 생성한 UUID를 기기 등록 API로 받습니다.
-- 서버의 `userDeviceId`를 기준으로 즐겨찾기와 최근 조회 기록을 관리합니다.
-- 즐겨찾기는 기기 ID와 메뉴 ID의 복합키로 구분합니다.
-- 등록 쿼리에 `ON CONFLICT DO NOTHING`을 사용합니다.
+아래는 정상 발급된 토큰 A를 B로 교체한 뒤, 로그아웃하는 흐름입니다.
 
-**결과**
+```mermaid
+sequenceDiagram
+    participant APP as 앱
+    participant API as 인증 API
+    participant DB as PostgreSQL
 
-같은 메뉴의 등록 요청이 반복되어도 즐겨찾기가 중복 생성되지 않습니다.
+    APP->>API: 토큰 A로 재발급 요청
+    API->>DB: A 해시 조회·행 잠금
+    Note over API,DB: 만료 검증 후 동일 트랜잭션에서 교체
+    API->>DB: A 삭제·새 토큰 B 해시 저장
+    DB-->>API: 커밋 완료
+    API-->>APP: 새 Access Token과 Refresh Token B
 
-현재 기기 ID는 기록 구분을 위한 식별자입니다. 계정 인증이나 기기 소유 증명을 대신하지 않으며, 여러 기기 간 계정 기반 동기화는 후속 작업입니다.
+    APP->>API: 이전 토큰 A 재사용
+    API->>DB: A 해시 조회
+    DB-->>API: 저장된 토큰 없음
+    API-->>APP: 401 재발급 거절
 
-### 4-4. 최근 본 레시피를 최신 5개로 유지
+    APP->>API: 토큰 B로 로그아웃
+    API->>DB: B 해시 조회·행 잠금·삭제
+    DB-->>API: 커밋 완료
+    API-->>APP: 204 로그아웃 완료
 
-**문제**
+    APP->>API: 토큰 B로 재발급 요청
+    API->>DB: B 해시 조회
+    DB-->>API: 저장된 토큰 없음
+    API-->>APP: 401 재발급 거절
+```
 
-같은 메뉴를 다시 조회하면 기존 기록의 순서를 갱신해야 하고, 동시 저장 요청에서도 기록 수를 일관되게 관리해야 합니다.
+서비스·DB 테스트 **7개**, HTTP API 테스트 **4개**로 교체·재사용·만료·반복 로그아웃·입력 오류를 검증했습니다.
 
-**구현**
+> 이미 발급된 Access Token은 별도의 즉시 폐기 정책 없이 만료까지 유효합니다.
 
-1. 기기 ID와 메뉴 ID를 검증합니다.
-2. 기기 행에 쓰기 잠금을 획득합니다.
-3. 기존 기록이 있으면 조회 시간을 갱신하고, 없으면 새로 저장합니다.
-4. 변경 내용을 `flush()`한 후 최신순으로 조회합니다.
-5. 앞의 5개를 유지하고 초과 기록을 삭제합니다.
+[토큰 재발급·로그아웃 코드](src/main/java/com/zipbob/zipbob_backend/service/RefreshTokenService.java)
 
-**선택 이유**
+<Br>
 
-기기별 저장 요청을 트랜잭션 안에서 순서대로 처리합니다. 저장·시간 갱신·초과 기록 삭제가 같은 트랜잭션에 포함되므로 이후 작업이 실패하면 함께 롤백됩니다.
+### 2. 앱과 관리자의 인증 분리
 
-조회 시간이 같으면 기록 ID를 추가 정렬 기준으로 사용합니다.
+앱은 요청마다 JWT를 보내고, 관리자 웹은 브라우저 세션을 사용합니다. <br>
+인증 방식이 서로 영향을 주지 않도록 **SecurityFilterChain을 분리**했습니다.
 
-### 4-5. 액세스 토큰과 리프레시 토큰 분리
-
-| 구분 | 액세스 토큰 | 리프레시 토큰 |
+| 구분 | 앱 API | 관리자 웹·API |
 | --- | --- | --- |
-| 형태 | HS256 서명 JWT | 32바이트 난수 기반 문자열 |
-| 용도 | 회원 API 인증 | 새 토큰 발급 |
-| 서버 저장 | 토큰 원문을 저장하지 않음 | SHA-256 해시 저장 |
-| 검증 | 서명·만료·발급자·토큰 종류·회원 존재 | 형식·해시 조회·만료 |
-| 재발급 | 새 JWT 발급 | 기존 토큰 삭제 후 새 토큰 발급 |
+| 인증 방식 | Bearer JWT | 폼 로그인·세션 |
+| 세션 사용 | Stateless, 관리자 세션 사용 안 함 | 로그인 세션 사용 |
+| 접근 제어 | JWT로 회원 확인 | ADMIN 권한 검사 |
+| 변경 요청 보호 | Authorization 헤더 기반 인증 | CSRF 토큰 검증 |
 
-**재발급 처리**
+보안 테스트에서는 다음 요청이 차단되는지 확인합니다.
 
-- 리프레시 토큰 해시로 대상 행을 조회하면서 쓰기 잠금을 획득합니다.
-- 만료 여부를 확인합니다.
-- 기존 리프레시 토큰을 삭제하고 새 토큰을 발급합니다.
-- 새 액세스·리프레시 토큰을 반환합니다.
+- 일반 회원의 관리자 기능 접근
+- CSRF 토큰 없는 관리자 변경 요청
+- 관리자 세션만으로 앱 API에 접근하는 요청
 
-같은 리프레시 토큰의 동시 사용을 직렬화하고, 사용이 끝난 토큰을 교체하도록 구성했습니다.
+[앱 보안 설정](src/main/java/com/zipbob/zipbob_backend/config/SecurityConfig.java) · [관리자 보안 설정](src/main/java/com/zipbob/zipbob_backend/admin/config/AdminSecurityConfig.java) · [보안 테스트](src/test/java/com/zipbob/zipbob_backend/security)
 
-로그아웃은 해당 리프레시 토큰을 삭제합니다. 이미 발급된 액세스 토큰을 즉시 폐기하는 차단 목록은 현재 구현 범위에 포함되지 않습니다.
+<Br>
 
-### 4-6. 이메일 인증의 목적과 사용 상태 검증
+### 3. 회원 기록의 중복 방지와 정합성
 
-**문제**
+즐겨찾기 저장 전에 존재 여부만 조회하면, 동시에 들어온 두 요청이 모두 저장을 시도할 수 있습니다. <br>
+**DB 제약조건과 트랜잭션으로 기록을 관리**했습니다.
 
-인증번호가 일치하는지만 확인하면 다른 이메일이나 다른 작업에 인증 결과를 재사용할 수 있습니다.
-
-**구현**
-
-인증을 번호 확인 단계와 후속 작업 승인 단계로 구분합니다.
-
-1. 6자리 인증번호를 생성해 이메일로 전송합니다.
-2. 인증번호는 BCrypt 해시로 저장합니다.
-3. 번호 확인에 성공하면 별도의 인증 증명을 발급합니다.
-4. 인증 증명은 SHA-256 해시로 저장합니다.
-5. 후속 요청에서 이메일·목적·만료·사용 여부를 검증합니다.
-6. 실제 작업의 트랜잭션 안에서 인증 증명을 사용 처리합니다.
-
-| 인증 목적 | 코드 |
+| 대상 | 처리 방식 |
 | --- | --- |
-| 회원가입 | `SIGNUP` |
-| 아이디 찾기 | `FIND_ID` |
-| 비밀번호 재설정 | `RESET_PASSWORD` |
+| 기록 소유자 | 클라이언트가 전달한 ID 대신 JWT로 확인한 회원 ID 사용 |
+| 즐겨찾기 | 회원·메뉴 복합키와 `ON CONFLICT DO NOTHING`으로 중복 저장 방지 |
+| 최근 기록 | 회원 행 잠금 후 저장·조회 시각 갱신·초과 기록 삭제를 한 트랜잭션에서 처리 |
+| 조회 순서 | 조회 시각과 기록 ID를 기준으로 정렬해 최신 5개 유지 |
 
-### 인증 정책
+같은 회원의 요청은 잠금을 기다릴 수 있습니다. 서로 다른 회원의 요청은 같은 회원 행 잠금을 공유하지 않습니다.
 
-| 항목 | 현재 설정 |
+즐겨찾기는 실제 PostgreSQL 테스트로 **중복 등록 방지와 회원별 조회·삭제 범위**를 검증합니다. <Br>
+최근 기록과 토큰 재발급의 동시 요청 검증은 추가할 항목입니다.
+
+[즐겨찾기 쿼리](src/main/java/com/zipbob/zipbob_backend/repository/LikeRepository.java) · [최근 기록 처리](src/main/java/com/zipbob/zipbob_backend/service/RecentRecipeService.java) · [PostgreSQL 테스트](src/integrationTest/java/com/zipbob/zipbob_backend/repository/LikeRepositoryIntegrationTest.java)
+
+<Br>
+
+### 4. 이메일 인증 증명의 목적·사용 상태 검증
+
+회원가입에 사용한 인증 결과가 비밀번호 재설정 등 다른 작업에 재사용되지 않도록, <Br>
+**인증번호 확인과 실제 작업 승인**을 나눴습니다.
+
+1. 인증번호 확인에 성공하면 별도의 인증 증명을 발급합니다.
+2. 후속 요청에서 이메일·인증 목적·만료·사용 여부를 검증합니다.
+3. 실제 작업과 인증 증명 사용 처리를 같은 트랜잭션에서 수행합니다.
+
+비밀번호 재설정은 **인증 증명 사용 → 비밀번호 변경 → 기존 Refresh Token 삭제**를 함께 처리합니다. <Br>회원 정보 불일치 등으로 작업이 실패하면 인증 증명의 사용 처리도 롤백됩니다.
+
+[이메일 인증 코드](src/main/java/com/zipbob/zipbob_backend/service/EmailVerificationService.java) · [비밀번호 재설정 코드](src/main/java/com/zipbob/zipbob_backend/service/UserService.java)
+
+<Br>
+
+## 📌 테스트와 CI
+
+- **서비스 로직:** 단위 테스트
+- **인증·HTTP 응답:** MockMvc
+- **PostgreSQL 전용 SQL:** 실제 PostgreSQL 통합 테스트
+
+### 검증 항목
+
+| 대상 | 주요 검증 항목 |
 | --- | --- |
-| 인증번호 | 숫자 6자리 |
-| 인증번호 유효시간 | 5분 |
-| 인증 증명 유효시간 | 10분 |
-| 같은 이메일·목적의 재발송 간격 | 60초 |
-| 인증번호 불일치 허용 횟수 | 최대 5회 |
-| 재발송 | 기존 미사용 인증번호·인증 증명 만료 처리 |
+| JWT·앱 API | 서명·만료, 토큰 누락·오류, 삭제된 회원, 보호 경로 접근 |
+| 관리자 보안 | 역할별 접근, CSRF, 앱 JWT와 관리자 세션 분리 |
+| Refresh Token | 해시 저장, 재발급·교체, 로그아웃 후 재사용 차단 |
+| 즐겨찾기 | 회원·메뉴 검증, 중복 등록 방지, 회원별 데이터 격리 |
+| 대시보드 | 한국 시간 기준 최근 7일, 누락 날짜 보정, 합계·그래프 계산 |
 
-회원가입용 인증으로 비밀번호를 재설정하거나, 인증한 이메일을 바꾸어 가입하거나, 이미 사용한 인증 증명을 다시 사용하는 요청을 거절합니다.
+**확인된 결과:** Refresh Token 테스트 11개 및 전체 기본 테스트 로컬 통과.<Br>
+**추가 검증:** 이메일 인증·비밀번호 재설정의 실패·재사용 시나리오, 동시 요청
 
-### 동시 요청 처리
+<Br>
 
-같은 이메일·목적의 발송·확인·사용 요청에는 PostgreSQL 트랜잭션 단위 advisory lock을 적용합니다. 인증 기록을 변경하는 단계에서는 행 잠금도 사용합니다.
+### GitHub Actions
 
-인증번호가 틀린 경우에도 실패 횟수는 저장되도록 확인 메서드의 롤백 정책을 구분했습니다.
+GitHub Actions는 PR과 `main`·`dev` push 시 다음 순서로 실행됩니다.
 
-### 4-7. 비밀번호 재설정과 인증 증명 소비를 하나의 작업으로 처리
+1. Java 21에서 기본 테스트와 빌드
+2. PostgreSQL 18 테스트 DB 및 스키마 준비
+3. PostgreSQL 통합 테스트 실행
+4. 성공·실패 여부와 관계없이 테스트 리포트 보관
 
-- 회원가입과 같은 비밀번호 검증 규칙을 사용합니다.
-- `RESET_PASSWORD` 목적의 인증 증명을 검증합니다.
-- 아이디에 등록된 이메일과 요청 이메일이 일치하는지 확인합니다.
-- 새 비밀번호를 BCrypt 해시로 변경합니다.
-- 해당 회원의 기존 리프레시 토큰을 삭제합니다.
+[CI 설정](.github/workflows/backend-ci.yml) · [최신 실행 결과](https://github.com/hyeseon1020/zipbob_back/actions/workflows/backend-ci.yml)
 
-이 과정은 하나의 트랜잭션으로 처리합니다. 회원 정보가 일치하지 않는 등 후속 검증에 실패하면 인증 증명의 사용 처리도 롤백됩니다.
+<Br>
 
-<br>
+## 📌 기술 스택
 
-## 5. 데이터베이스 구성
-
-현재 엔티티와 주요 SQL은 `zipbob_app` 스키마를 사용합니다.
-
-| 테이블 | 역할 |
+| 구분 | 기술 |
 | --- | --- |
-| `menu_mng` | 메뉴 기본 정보와 레시피 |
-| `file_mng` | 메뉴 이미지와 파일 정보 |
-| `code_mng` | 카테고리·음식 특징 등 공통코드 |
-| `tag_mng` | 메뉴별 음식 특징 연결 |
-| `user_device_mng` | UUID·플랫폼 등 기기 정보 |
-| `like_mng` | 기기별 즐겨찾기 |
-| `recent_recipe_mng` | 기기별 최근 조회 기록 |
-| `user_mng` | 회원 정보와 비밀번호 해시 |
-| `user_refresh_token_mng` | 리프레시 토큰 해시와 만료 정보 |
-| `email_verification_mng` | 인증번호·인증 증명·시도 횟수·사용 상태 |
+| 서버 | Java 21 · Spring Boot 4.1.1 |
+| 데이터 | PostgreSQL · Spring Data JPA · JPQL · Native SQL · JdbcTemplate |
+| 인증·관리자 화면 | Spring Security · JWT · BCrypt · Thymeleaf |
+| 테스트·빌드 | JUnit 5 · Mockito · MockMvc · H2 · Gradle · GitHub Actions |
 
-### 주요 관계와 정책
+<Br>
 
-- 메뉴 한 개에 여러 이미지와 태그를 연결합니다.
-- 즐겨찾기는 `(user_device_id, menu_id)` 조합으로 구분합니다.
-- 최근 조회 기록은 같은 기기·메뉴 조합을 중복 생성하지 않고 조회 시간을 갱신합니다.
-- 회원가입 시 아이디·닉네임·이메일·가입 기기의 중복을 검사합니다.
-- 카테고리·태그 이름 조회에는 `zipbob_app.codename_f()` 함수를 사용합니다.
+## 📌 로컬 실행
 
-상세 설계는 [ERD](https://www.erdcloud.com/d/3aFinoeCdppLGQ8Na)를 참고합니다. 실행 환경은 현재 엔티티·쿼리와 일치하는 테이블, 제약조건, 시퀀스, 함수가 필요합니다.
-
-<br>
-
-## 6. API 명세 요약
-
-### 메뉴·추천·공통코드
-
-| 메서드 | 경로 | 기능 |
-| --- | --- | --- |
-| GET | `/api/menus` | 메뉴 목록·검색·카테고리 필터 |
-| GET | `/api/menus/{menuId}` | 레시피 상세 |
-| GET | `/api/codes/category` | 카테고리 코드 |
-| GET | `/api/codes/tag` | 음식 특징 코드 |
-| GET | `/api/menufilter` | 태그를 포함한 메뉴 목록 |
-| POST | `/api/menufilter/recommend` | 조건에 맞는 추천 후보 |
-
-메뉴 검색 예시:
-
-```http
-GET /api/menus?keyword=계란&category=rice_bowl
-```
-
-추천 요청 예시:
-
-```json
-{
-  "category": "rice_bowl",
-  "tags": ["EASY", "QUICK"]
-}
-```
-
-조건 없는 추천 후보 조회:
-
-```json
-{
-  "category": null,
-  "tags": []
-}
-```
-
-코드 값은 DB에 등록된 실제 공통코드를 사용해야 합니다.
-
-### 기기·즐겨찾기·최근 기록
-
-| 메서드 | 경로 | 기능 |
-| --- | --- | --- |
-| POST | `/api/user-devices` | 기기 등록 |
-| GET | `/api/favorites?userDeviceId={id}` | 즐겨찾기 목록 |
-| PUT | `/api/favorites/{menuId}?userDeviceId={id}` | 즐겨찾기 등록 |
-| DELETE | `/api/favorites/{menuId}?userDeviceId={id}` | 즐겨찾기 해제 |
-| GET | `/api/recent-recipes?userDeviceId={id}` | 최근 본 레시피 |
-| PUT | `/api/recent-recipes/{menuId}?userDeviceId={id}` | 조회 기록 저장·갱신 |
-
-즐겨찾기 등록·해제와 최근 조회 기록 저장은 성공 시 `204 No Content`를 반환합니다.
-
-### 회원·인증
-
-| 메서드 | 경로 | 기능 | 인증 방식 |
-| --- | --- | --- | --- |
-| POST | `/api/users/signup` | 회원가입 | 이메일 인증 증명 |
-| POST | `/api/users/login` | 로그인 | 아이디·비밀번호 |
-| POST | `/api/users/refresh` | 토큰 재발급 | 리프레시 토큰 |
-| POST | `/api/users/logout` | 로그아웃 | 리프레시 토큰 |
-| GET | `/api/users/me` | 내 정보 조회 | 액세스 토큰 |
-| POST | `/api/email-verifications/send` | 인증번호 발송 | 이메일·목적 |
-| POST | `/api/email-verifications/confirm` | 인증번호 확인 | 인증 요청 ID·번호 |
-| POST | `/api/users/find-id` | 아이디 찾기 | 이메일 인증 증명 |
-| POST | `/api/users/reset-password` | 비밀번호 재설정 | 이메일 인증 증명·회원 정보 |
-
-회원가입 성공 시 `201 Created`, 로그아웃 성공 시 `204 No Content`를 반환합니다.
-
-인증된 회원 조회:
-
-```http
-GET /api/users/me
-Authorization: Bearer {accessToken}
-```
-
-### 접근 정책
-
-- 세션을 생성하지 않는 `STATELESS` 인증을 사용합니다.
-- 메뉴·추천·기기별 기록 API는 비회원에게 허용합니다.
-- 내 정보 조회는 인증된 회원에게 허용합니다.
-- 명시적으로 허용하지 않은 요청은 기본적으로 거절합니다.
-
-<br>
-
-## 7. 프로젝트 구조
-
-기준 패키지: `com.zipbob.zipbob_backend`
-
-| 경로 | 주요 역할 |
-| --- | --- |
-| `config/` | Spring Security, CORS, BCrypt 설정 |
-| `controller/` | 메뉴·추천·기기·회원·이메일 인증 API |
-| `service/` | 비즈니스 로직과 트랜잭션 처리 |
-| `repository/` | 조회·저장 쿼리와 잠금 설정 |
-| `entity/` | 테이블 매핑과 상태 변경 |
-| `dto/` | 요청·응답 DTO와 조회 Projection |
-| `security/` | JWT 생성·검증과 인증 필터 |
-| `src/main/resources/static/images/menus/` | 메뉴 이미지 |
-| `src/main/resources/application.properties.example` | DB 연결 설정 예시 |
-| `src/test/` | 애플리케이션 컨텍스트 로딩 테스트 |
-
-<br>
-
-## 8. 로컬 실행 방법
-
-### 준비 사항
-
-- JDK 21
-- PostgreSQL
-- 현재 코드와 일치하는 `zipbob_app` 스키마와 테이블
-- `zipbob_app.codename_f()` 함수
-- 메뉴·태그·공통코드 등 초기 데이터
-- SMTP 발신 계정과 접속 정보
-
-현재 저장소는 DB 자동 생성 대신 스키마 검증을 사용합니다. 빈 데이터베이스에서 실행하려면 테이블과 관련 DB 객체를 먼저 준비해야 합니다.
-
-### 저장소 받기
-
-```bash
-git clone https://github.com/hyeseon1020/zipbob_back.git
-cd zipbob_back
-```
-
-### 로컬 설정 파일 만들기
-
-`src/main/resources/application.properties.example`을 복사해 같은 위치에 `application.properties`를 만듭니다.
-
-현재 예시 파일에는 DB 설정만 포함되어 있으므로 JWT·메일 설정을 추가해야 합니다.
-
-아래는 로컬 구성 예시입니다. 토큰 유효기간과 SMTP 값은 실행 환경에 맞게 설정합니다.
-
-```properties
-spring.application.name=zipbob_backend
-server.port=8080
-
-# PostgreSQL
-spring.datasource.url=jdbc:postgresql://localhost:5432/${DB_NAME}?currentSchema=zipbob_app
-spring.datasource.username=${DB_USER_NAME}
-spring.datasource.password=${DB_PASSWORD}
-
-# JPA
-spring.jpa.hibernate.ddl-auto=validate
-spring.jpa.properties.hibernate.default_schema=zipbob_app
-
-# 로컬 SQL 확인
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-
-# JWT
-jwt.secret=${JWT_SECRET}
-jwt.issuer=zipbob
-jwt.access-token-expiration-seconds=900
-jwt.refresh-token-expiration-days=14
-
-# SMTP: 아래는 STARTTLS를 사용하는 구성 예시
-spring.mail.host=${MAIL_HOST}
-spring.mail.port=${MAIL_PORT}
-spring.mail.username=${MAIL_USERNAME}
-spring.mail.password=${MAIL_PASSWORD}
-spring.mail.properties.mail.smtp.auth=true
-spring.mail.properties.mail.smtp.starttls.enable=true
-```
-
-- `JWT_SECRET`은 **32바이트 난수의 Base64 인코딩 값**을 사용합니다.
-- JWT·DB·SMTP 값은 실행 환경변수에 등록합니다.
-- SMTP 암호화 방식과 포트는 사용하는 메일 서비스 설정에 맞춥니다.
-- `application.properties`는 `.gitignore`에 포함되어 있습니다.
-- 일부 Native SQL은 스키마 이름을 생략하므로 연결의 기본 스키마도 맞춰야 합니다.
-
-### 실행
-
-macOS·Linux:
-
-```bash
-./gradlew bootRun
-```
-
-Windows PowerShell:
+JDK 21과 PostgreSQL이 필요합니다. `zipbob_app` 스키마·테이블·함수를 준비하고, <Br>
+[설정 예시](src/main/resources/application.properties.example)를 참고해 `application.properties`에 DB·JWT·SMTP 설정을 추가합니다.
 
 ```powershell
-.\gradlew.bat bootRun
+.\gradlew.bat bootRun          # 서버 실행
+.\gradlew.bat test             # 기본 테스트
+.\gradlew.bat integrationTest  # PostgreSQL 통합 테스트
 ```
 
-### Flutter Web 연동
+macOS·Linux에서는 `./gradlew`를 사용합니다.
 
-현재 `WebConfig`는 다음 출처를 허용합니다.
+PostgreSQL 통합 테스트는 아래 준비가 필요합니다.
 
-```text
-http://localhost:3000
-```
+1. [스키마 SQL](src/integrationTest/resources/db/schema.sql)을 테스트 전용 DB에 적용
+2. `INTEGRATION_DB_URL`, `INTEGRATION_DB_USERNAME`, `INTEGRATION_DB_PASSWORD` 설정
+3. `integrationTest` 실행
 
-프론트엔드를 같은 포트로 실행할 수 있습니다.
+<details>
+<summary>추가 설정</summary>
 
-```bash
-flutter run -d chrome --web-port=3000
-```
+- JWT: `jwt.secret`(32바이트 난수의 Base64 값), `jwt.issuer`, `jwt.access-token-expiration-seconds`, `jwt.refresh-token-expiration-days`
+- SMTP: 메일 서버 주소·포트·계정과 제공자에 맞는 TLS 설정
+- 이미지: `app.menu-image-dir`(기본 `./images/menus`), multipart 파일·요청 용량 제한
+- 관리자: `/admin/login`, 최초 계정 생성은 `admin.bootstrap.enabled` 및 `admin.bootstrap.id`·`admin.bootstrap.password`·`admin.bootstrap.name` 설정 사용
 
-다른 포트를 사용하면 `WebConfig`의 허용 출처를 실제 프론트엔드 주소에 맞게 수정합니다.
-
-Android 에뮬레이터에서는 개발 PC의 서버에 다음 주소로 접근합니다.
-
-```text
-http://10.0.2.2:8080
-```
-
-<br>
-
-## 9. 빌드와 테스트
-
-### 빌드
-
-macOS·Linux:
-
-```bash
-./gradlew build
-```
-
-Windows PowerShell:
-
-```powershell
-.\gradlew.bat build
-```
-
-### 테스트
-
-macOS·Linux:
-
-```bash
-./gradlew test
-```
-
-Windows PowerShell:
-
-```powershell
-.\gradlew.bat test
-```
-
-### 현재 테스트 범위
-
-현재 자동 테스트는 `@SpringBootTest` 기반 컨텍스트 로딩 테스트입니다.
-
-실행 시 DB·JWT·메일 관련 설정이 필요하며, 비즈니스 규칙과 동시 요청을 검증하는 별도 테스트는 보완 예정입니다.
-
-| 보완 대상 | 검증할 내용 |
-| --- | --- |
-| 회원가입 | 중복 가입, 인증 없는 가입, 인증 대상 불일치 |
-| 이메일 인증 | 만료·오입력 횟수·목적 불일치·재사용 |
-| 토큰 재발급 | 만료 토큰, 교체된 토큰 재사용, 동시 요청 |
-| 최근 조회 기록 | 재조회 순서 갱신, 최신 5개 유지, 동시 저장 |
-| 비밀번호 재설정 | 회원 정보 일치, 인증 소비, 기존 리프레시 토큰 삭제 |
-
-<br>
-
-## 10. 현재 범위와 개선 계획
-
-| 항목 | 현재 상태 | 개선 계획 |
-| --- | --- | --- |
-| 내 정보 | 인증 후 조회 | 회원 정보 수정 |
-| 기기별 기록 | 기기 ID 기준 저장 | 기기 소유 검증·계정 동기화 검토 |
-| DB 초기화 | 사전 생성된 DB에 의존 | 마이그레이션·초기 데이터 관리 |
-| 실행 설정 | DB 예시 파일 제공 | JWT·메일 설정 예시 통합 |
-| 자동 테스트 | 컨텍스트 로딩 테스트 | 서비스·통합·동시성 테스트 |
-| 인증 데이터 | 만료 검증·명시적 삭제 | 만료 데이터 정리 작업 |
-| 배포 | 로컬 개발 기준 | 배포 환경 구성 및 앱 출시 연동 |
-
-<br>
-
-## 관련 문서
-
-- [Flutter 프론트엔드](https://github.com/WONDongin/zipbob_app)
-- [Spring Boot 백엔드](https://github.com/hyeseon1020/zipbob_back)
-- [ERD](https://www.erdcloud.com/d/3aFinoeCdppLGQ8Na)
-- [화면 설계서](https://docs.google.com/presentation/d/1v0SMmEkxajPqGHR3RwibuGB7U1ARyDGVYvMwpgL6tSM/edit)
+</details>
