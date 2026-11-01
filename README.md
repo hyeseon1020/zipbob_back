@@ -137,7 +137,7 @@ sequenceDiagram
 - CSRF 토큰 없는 관리자 변경 요청
 - 관리자 세션만으로 앱 API에 접근하는 요청
 
-[앱 보안 설정](src/main/java/com/zipbob/zipbob_backend/config/SecurityConfig.java) · [관리자 보안 설정](src/main/java/com/zipbob/zipbob_backend/admin/config/AdminSecurityConfig.java) · [보안 테스트](src/test/java/com/zipbob/zipbob_backend/security)
+[앱 보안 설정](src/main/java/com/zipbob/zipbob_backend/config/SecurityConfig.java) · [관리자 보안 설정](src/main/java/com/zipbob/zipbob_backend/config/AdminSecurityConfig.java) · [보안 테스트](src/test/java/com/zipbob/zipbob_backend/security)
 
 <Br>
 
@@ -156,7 +156,7 @@ sequenceDiagram
 같은 회원의 요청은 잠금을 기다릴 수 있습니다. 서로 다른 회원의 요청은 같은 회원 행 잠금을 공유하지 않습니다.
 
 즐겨찾기는 실제 PostgreSQL 테스트로 **중복 등록 방지와 회원별 조회·삭제 범위**를 검증합니다. <Br>
-최근 기록과 토큰 재발급의 동시 요청 검증은 추가할 항목입니다.
+Refresh Token 동시 재발급은 실제 PostgreSQL에서 두 요청의 잠금 대기를 확인하고 3회 반복 검증했습니다. 최근 기록의 동시 요청 검증은 추가할 항목입니다.
 
 [즐겨찾기 쿼리](src/main/java/com/zipbob/zipbob_backend/repository/LikeRepository.java) · [최근 기록 처리](src/main/java/com/zipbob/zipbob_backend/service/RecentRecipeService.java) · [PostgreSQL 테스트](src/integrationTest/java/com/zipbob/zipbob_backend/repository/LikeRepositoryIntegrationTest.java)
 
@@ -193,8 +193,17 @@ sequenceDiagram
 | 즐겨찾기 | 회원·메뉴 검증, 중복 등록 방지, 회원별 데이터 격리 |
 | 대시보드 | 한국 시간 기준 최근 7일, 누락 날짜 보정, 합계·그래프 계산 |
 
-**확인된 결과:** Refresh Token 테스트 11개 및 전체 기본 테스트 로컬 통과.<Br>
-**추가 검증:** 이메일 인증·비밀번호 재설정의 실패·재사용 시나리오, 동시 요청
+**확인된 결과:** 기존 전체 기본·통합 테스트 및 GitHub Actions 통과(2026-11-01, 개발자 확인).<Br>
+`AdminMenuControllerTest`의 HTTP 테스트 15개도 로컬 통과했습니다(개발자 확인). 이번 변경 이후 GitHub Actions 결과는 PR 체크에서 확인합니다.
+
+| 추가 통합 테스트 | 검증 내용 |
+| --- | --- |
+| 이메일 인증 5개 | 실패 횟수 저장, 횟수 제한, 만료·재사용 차단 |
+| 비밀번호 재설정 6개 | 암호화 저장, 토큰 삭제, 인증 증명 검증과 실패 시 롤백 |
+| 토큰 동시 재발급 1개 시나리오 × 3회 | 한 요청만 성공, 기존 토큰 차단, 새 토큰 사용 가능 |
+| 관리자 메뉴 23개 | 등록·수정, 이미지 변환·교체, 입력 검증, DB·파일 롤백 |
+
+[메뉴 HTTP 테스트](src/test/java/com/zipbob/zipbob_backend/admin/controller/AdminMenuControllerTest.java)는 실제 컨트롤러의 multipart 바인딩, 입력 오류 시 서비스 호출 차단, 관리자 ID 전달, 201·200·400·404·500 응답을 검증합니다. 서비스는 Mock으로 대체하며 보안 필터는 기존 `AdminSecurityTest`에서 별도로 검증합니다.
 
 <Br>
 
