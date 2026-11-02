@@ -33,23 +33,37 @@ public interface MenuFilterRepository extends JpaRepository<Menu, Integer> {
      * 상황에 맞추어 SQL 조건절을 수정하실 수 있습니다.
      */
     @Query(value = """
-        SELECT DISTINCT
-            m.menu_id AS menuId,
-            m.menu_name AS menuName,
-            m.category AS category,
-            zipbob_app.codename_f(m.category) AS categoryName,
-            m.description AS description,
-            f.file_path AS imageUrl
-        FROM zipbob_app.menu_mng m
-        INNER JOIN zipbob_app.tag_mng t ON m.menu_id = t.menu_id AND t.use_yn = 'Y'
-        INNER JOIN zipbob_app.code_mng c ON m.category = c.code_id AND c.use_yn = 'Y'
-        LEFT JOIN file_mng f ON m.menu_id = f.menu_id AND f.use_yn = 'Y'
-        WHERE (:category IS NULL OR :category = '' OR m.category = :category)
-          AND (:hasTags = false OR t.code_id IN (:tags))
+    SELECT DISTINCT
+        m.menu_id AS menuId,
+        m.menu_name AS menuName,
+        m.category AS category,
+        zipbob_app.codename_f(m.category) AS categoryName,
+        m.description AS description,
+        f.file_path AS imageUrl
+    FROM zipbob_app.menu_mng m
+    INNER JOIN zipbob_app.code_mng c
+        ON m.category = c.code_id
+       AND c.use_yn = 'Y'
+    LEFT JOIN zipbob_app.file_mng f
+        ON m.menu_id = f.menu_id
+       AND f.use_yn = 'Y'
+    WHERE (:category IS NULL OR :category = '' OR m.category = :category)
+      AND (
+          :hasTags = false
+          OR m.menu_id IN (
+              SELECT t.menu_id
+              FROM zipbob_app.tag_mng t
+              WHERE t.code_id IN (:tags)
+                AND t.use_yn = 'Y'
+              GROUP BY t.menu_id
+              HAVING COUNT(DISTINCT t.code_id) = :tagCount
+          )
+      )
     """, nativeQuery = true)
     List<MenuListProjection> findFilteredMenus(
             @Param("category") String category,
             @Param("tags") List<String> tags,
-            @Param("hasTags") boolean hasTags
+            @Param("hasTags") boolean hasTags,
+            @Param("tagCount") int tagCount
     );
 }
