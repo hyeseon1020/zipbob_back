@@ -48,14 +48,29 @@ public class MenuFilterService {
      * 프론트에서 받은 카테고리 및 태그 조건으로 필터링된 메뉴 조회
      */
     public List<MenuFilterResponseDto> getRecommendedMenus(String category, List<String> tags) {
-        // 태그 리스트가 비어있는지 여부 체크
-        boolean hasTags = (tags != null && !tags.isEmpty());
+        // 선택한 특징에서 null, 빈 값, 중복 제거
+        List<String> selectedTags = tags == null
+                ? List.of()
+                : tags.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(tag -> !tag.isEmpty())
+                .distinct()
+                .toList();
 
-        // 태그가 비어있을 경우 SQL IN 절 에러를 방지하기 위해 빈 임시 리스트 전달 가능성 대비
-        List<String> queryTags = hasTags ? tags : List.of("");
+        boolean hasTags = !selectedTags.isEmpty();
 
-        // 리포지토리 호출
-        List<MenuListProjection> results = menuFilterRepository.findFilteredMenus(category, queryTags, hasTags);
+        // 특징 미선택 시 빈 IN 목록 방지
+        List<String> queryTags = hasTags ? selectedTags : List.of("");
+
+        // 선택한 특징 개수까지 전달
+        List<MenuListProjection> results =
+                menuFilterRepository.findFilteredMenus(
+                        category,
+                        queryTags,
+                        hasTags,
+                        selectedTags.size()
+                );
 
         // DTO로 변환
         List<MenuFilterResponseDto> responseList = results.stream()
@@ -63,7 +78,12 @@ public class MenuFilterService {
                 .toList();
 
         // 💡 results 대신 변환된 responseList를 로그
-        log.info("ttttttttttt: {}", responseList);
+        log.debug(
+                "조건 추천 조회: category={}, tags={}, resultCount={}",
+                category,
+                selectedTags,
+                responseList.size()
+        );
 
         return responseList;
     }
