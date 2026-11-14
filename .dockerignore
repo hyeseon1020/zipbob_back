@@ -1,0 +1,9 @@
+.git
+.gradle
+build
+.env
+.env.*
+**/application.properties
+**/application-local.*
+**/application-dev.*
+**/application-secret.*
